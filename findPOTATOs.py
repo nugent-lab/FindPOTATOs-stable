@@ -46,7 +46,7 @@ max_speed =  2 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximu
 velocity_metric_threshold=1 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
 # in some sense this is controlled by how you're searching, so right now this value is vert high
 # to allow for all tracklets 
-min_tracklet_angle= 140 # minimum angle between a-b, b-c, will be used to search for det in frame c
+min_tracklet_angle= 100 # minimum angle between a-b, b-c, will be used to search for det in frame c
 timing_uncertainty = 5000 # 5  # seconds
 # will pick the biggest of these to determine radius of which to search
 
@@ -302,7 +302,7 @@ for m in np.arange(len(image_triplets_list)):
         pos_ang = temp_coord_a.position_angle(temp_coord_b)
         predict_c = temp_coord_b.directional_offset_by(position_angle =pos_ang, separation = sep)
         predict_c_np= [[predict_c.ra.radian, predict_c.dec.radian]]
-        print("predicted", predict_c.ra.deg, predict_c.dec.deg)
+        #print("predicted", predict_c.ra.deg, predict_c.dec.deg)
 
         # Determine search radius based on velocity and angle
         # pick the bigger of the two 
@@ -312,21 +312,16 @@ for m in np.arange(len(image_triplets_list)):
             sep.rad / time_interval_s
         )  # radians
         r_to_search_c=np.max([r_due_to_angle,r_due_to_timing])
-        print("r_to_search",r_to_search_c*(180/np.pi))
+        #print("r_to_search",r_to_search_c*(180/np.pi))
 
         # see if anything is around the predicted position in c
         indicies_c, distances_c = tree_c.query_radius(
             predict_c_np, r=r_to_search_c, return_distance=True)
 
         # if detection(s) are around precdicted position in c, then add to tracklet list.
-        print("len", len(indicies_c))
-
-        #THIS HAS REPEATING i INDEX, NEED TO FIX
-
         for i in range(len(indicies_c)):
             if indicies_c.size > 0:
                 for j in range(len(indicies_c[i])):
-                    print("i,j",i,j)
                     new_tracklets.append(np_tracklets[:][i])
                     point_c.append(indicies_c[i][j])
                     dec_c.append(c_moving["Dec"][indicies_c[i][j]])
@@ -343,6 +338,7 @@ for m in np.arange(len(image_triplets_list)):
     complete_tracklets = pd.DataFrame(
         new_tracklets,
         columns=[
+            "pair_id",
             "point_a",
             "point_b",
             "ab_dist",

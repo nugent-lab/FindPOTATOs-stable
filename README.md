@@ -79,7 +79,9 @@ python findPOTATOs.py CSS
 
 Example 3: ATLAS
 - very close together need smaller
-- can find asteroids that change in velocity, so need high "timing uncertantiy"
+- can find asteroids that change in velocity across the plane of hte sky, so increase "timing uncertainty" to ~100 s to compensate. 
+
+double linkages- ex: expanding timing_uncertainty = 5000, max_speed =  2 
 
 
 ## How to Cite
