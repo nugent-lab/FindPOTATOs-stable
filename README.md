@@ -38,8 +38,10 @@ pip install -r requirements.txt
 | `id `  | String. Unique detection identifier    |
 | `RA` | Float. Right ascension of detection, degrees.     |
 | `Dec`    | Float. Declination of detection, degrees.    |
-|`mjd`| Float. Date and time of observation, in Modified Julian Date format. This value should be the same for all detections in a single file|
+|`mjd`| Float. Date and time of midpoint of observation, in Modified Julian Date format. This value should be the same for all detections in a single file|
 | `observatory_code`| MPC-assigned observatory code where observations were taken. This value should also be constant for all detections in the file.|
+
+# TBD more columns that are needed for ADES here.
 
 It also seeks an `image_triplets.csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for a length three tracklet, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
 
@@ -55,6 +57,29 @@ This code was designed to link tracklets as part of Carrie Nugent's [NEAT Reproc
 `export_ades` If enabled, it will also export your results in ADES 2017 format. Also see our [Unofficial ADES repository](https://github.com/nugent-lab/unofficial_ADES) for stand-alone code to help with this task.
 
 `print_thumbs` If enabled, this will print thumbnails of the sources in your resulting tracklets. It's always a good idea to check your sources by eye, to ensure you are submitting high-quality astrometry to the MPC. This does, however, slow down the code a bit. If you have independently validated your sources via another method, you can turn this off.
+
+## Examples
+
+Example 1: NEAT
+can run with
+show_sky_image = 'y' #query skyveiw for cutout of sky
+export_ades = "y"
+include_image_thumbs = 'y' 
+
+python findPOTATOs.py NEAT
+
+
+Example 2: CSS
+Needs to run with
+show_sky_image = 'n' #query skyveiw for cutout of sky
+export_ades = "n"
+include_image_thumbs = 'n' 
+
+python findPOTATOs.py CSS
+
+Example 3: ATLAS
+- very close together need smaller
+- can find asteroids that change in velocity, so need high "timing uncertantiy"
 
 
 ## How to Cite

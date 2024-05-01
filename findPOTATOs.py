@@ -28,37 +28,36 @@ image_path = "images/" # location of fits files
 
 starting_tracklet_id='00000' #length 5 string to start increments with.
 save_tracklet_images = ("y")  # turn this on (='y') if you want to save diagnostic images and plots of each tracklet
-show_sky_image = 'y' #query skyveiw for cutout of sky
-export_ades = "y"  # turn this on (='y') if you want observations exported in XML ADES format
+show_sky_image = 'n' #query skyveiw for cutout of sky
+export_ades = "n"  # turn this on (='y') if you want observations exported in XML ADES format
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 
-stationary_dist_deg = 3 * u.arcsec # the max distance between two sources in order for them
+stationary_dist_deg = 0 * u.arcsec # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed. Bigger sources may 
 
-lin_ratio_threshold = 1.01 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
+lin_ratio_threshold = 1.5 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
 max_mag_variance = 2 #2 # the maximum amount brightness can vary across a tracklet, in mag
-max_speed =  0.06 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
+max_speed =  2 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
 # angle between a-b-c is variable min_tracklet_angle (degrees)
 #above this threshold
-velocity_metric_threshold=0.001 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
+velocity_metric_threshold=1 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
 # in some sense this is controlled by how you're searching, so right now this value is vert high
 # to allow for all tracklets 
-min_tracklet_angle= 160 # minimum angle between a-b, b-c, will be used to search for det in frame c
-timing_uncertainty = 10 # 5  # seconds
+min_tracklet_angle= 140 # minimum angle between a-b, b-c, will be used to search for det in frame c
+timing_uncertainty = 5000 # 5  # seconds
 # will pick the biggest of these to determine radius of which to search
 
 Maximum_residual = (
     0.9  # arcseconds #This is the maximum residual allowed after orbfit fit
 )
-min_dist_deg = 3 # arcseconds #smallest distance you will accept an asteroid to move between frames
+min_dist_deg = 0.0001 # arcseconds #smallest distance you will accept an asteroid to move between frames
 findorb_check = (
     "n"  # if =='y', check tracklets using Bill Gray's Find Orb for accuracy.
 )
-# The MPC wants the time of the midpoint of exposure. For example if exposure times are 20 seconds, so
-# this code requires a exposure correction of +10 seconds.
+tracklet_tag='test' #your unique tracklet code.
 ########## ADES PARAMETERS ##########
 # header information. None of these will be changed by the
 # following code.
@@ -146,18 +145,14 @@ if export_ades == "y":
     xml_tracklet_found = "n"
 
 for m in np.arange(len(image_triplets_list)):
-    file_a = "o_sources" + image_triplets_list.filea[m] + ".csv"
-    file_b = "o_sources" + image_triplets_list.fileb[m] + ".csv"
-    file_c = "o_sources" + image_triplets_list.filec[m] + ".csv"
+    file_a = image_triplets_list.filea[m]
+    file_b = image_triplets_list.fileb[m]
+    file_c = image_triplets_list.filec[m]
 
     # Put frames in exposure order, so that frame a is first, b is second, and c is third.
     init_a = pd.read_csv(input_directory + file_a)
     init_b = pd.read_csv(input_directory + file_b)
     init_c = pd.read_csv(input_directory + file_c)
-
-    a_exposure_s=init_a.exposure_s[0].astype(float)
-    b_exposure_s=init_b.exposure_s[0].astype(float)
-    c_exposure_s=init_c.exposure_s[0].astype(float)
 
     init_a_time = Time(init_a.mjd[0].astype(float), format="mjd", scale="utc")
     init_b_time = Time(init_b.mjd[0].astype(float), format="mjd", scale="utc")
@@ -179,16 +174,10 @@ for m in np.arange(len(image_triplets_list)):
     b = pd.read_csv(input_directory + order_frames.names[1])
     c = pd.read_csv(input_directory + order_frames.names[2])
     print("Checking file triplet number", m, "consisting of:", order_frames.names[0], order_frames.names[1], order_frames.names[2])
-    # correct for time- MPC wants midponint of expsure, but this code takes
-    # the input as beginning of exposure time
-    #print("TimeDelta",TimeDelta(a_exposure_s * u.s))
     a_time = Time(a.mjd[0].astype(float), format="mjd", scale="utc")
     b_time = Time(b.mjd[0].astype(float), format="mjd", scale="utc")
     c_time = Time(c.mjd[0].astype(float), format="mjd", scale="utc")
     #print("original times", a_time, b_time, c_time)
-    a_time += TimeDelta(a_exposure_s * u.s)
-    b_time += TimeDelta(b_exposure_s * u.s)
-    c_time += TimeDelta(c_exposure_s * u.s)
     decimal_time_a = str(a_time).split(".")
     decimal_time_b = str(b_time).split(".")
     decimal_time_c = str(c_time).split(".")
@@ -203,33 +192,9 @@ for m in np.arange(len(image_triplets_list)):
     b["dec_rad"] = np.radians(b["Dec"])
     c["ra_rad"] = np.radians(c["RA"])
     c["dec_rad"] = np.radians(c["Dec"])
-
-    # derive filenames of original fits files
-    # then load images with fitsio
-    fits_frame_a = order_frames.names[0].split("s")
-    fits_frame_a = fits_frame_a[2]
-    fits_frame_a = fits_frame_a[:-1] + "fit.fz"
-
-    fits_frame_b = order_frames.names[1].split("s")
-    fits_frame_b = fits_frame_b[2]
-    fits_frame_b = fits_frame_b[:-1] + "fit.fz"
-
-    fits_frame_c = order_frames.names[2].split("s")
-    fits_frame_c = fits_frame_c[2]
-    fits_frame_c = fits_frame_c[:-1] + "fit.fz"
-    #print("images", fits_frame_a, fits_frame_b, fits_frame_c)
-
-    telescope_image_a = fitsio.read(image_path + fits_frame_a)
-    telescope_image_b = fitsio.read(image_path + fits_frame_b)
-    telescope_image_c = fitsio.read(image_path + fits_frame_c)
-
-    # These df copies are a remnant of previous code and should
-    # be removed during future refactoring
-    #a_moving=a.copy(deep=True)
-    #b_moving=b.copy(deep=True)
-    #c_moving=c.copy(deep=True)
     a_moving, b_moving, c_moving = remove_stationary_sources(a, b, c, stationary_dist_deg, showplots='n')
     
+    print(a_moving.describe(),b_moving.describe())
 
     # if any frames are empty after ML and/or stationary source screening, then no tracklets will
     # be found here. Skip to next frame triplet
@@ -262,10 +227,6 @@ for m in np.arange(len(image_triplets_list)):
     dec_b = []
     ra_a = []
     ra_b = []
-    x_a = []
-    x_b = []
-    y_a = []
-    y_b = []
     mag_a = []
     mag_b = []
     observatory_code = []
@@ -285,19 +246,11 @@ for m in np.arange(len(image_triplets_list)):
                 dec_b.append(b_moving["Dec"][i])
                 ra_a.append(a_moving["RA"][indicies_b[i][j]])
                 ra_b.append(b_moving["RA"][i])
-                x_a.append(a_moving["xcentroid"][indicies_b[i][j]])
-                x_b.append(b_moving["xcentroid"][i])
-                y_a.append(a_moving["ycentroid"][indicies_b[i][j]])
-                y_b.append(b_moving["ycentroid"][i])
                 mag_a.append(a_moving["magnitude"][indicies_b[i][j]])
                 mag_b.append(b_moving["magnitude"][i])
                 observatory_code.append(b_moving["observatory_code"][i])
                 band.append(b_moving["band"][i])
                 tracklet_count += 1
-            #else:
-            #    print(
-            #        "Warning: Distance less than min_dist_rad. Stationary source removal not working properly."
-            #    )
 
     # to pandas df
     candidate_tracklet = pd.DataFrame(pair_id)
@@ -308,76 +261,16 @@ for m in np.arange(len(image_triplets_list)):
     candidate_tracklet["dec_b"] = dec_b
     candidate_tracklet["ra_a"] = ra_a
     candidate_tracklet["ra_b"] = ra_b
-    candidate_tracklet["x_a"] = x_a
-    candidate_tracklet["y_a"] = y_a
-    candidate_tracklet["x_b"] = x_b
-    candidate_tracklet["y_b"] = y_b
     candidate_tracklet["mag_a"] = mag_a
     candidate_tracklet["mag_b"] = mag_b
     candidate_tracklet["observatory_code"] = observatory_code
     candidate_tracklet["band"] = band
 
-    time_interval2_s = (c_time - a_time).sec
-    # print('time_interval2_s',time_interval2_s)
-
-    # get predicted RA and Dec of where point c should be
-    pred_dist = (
-        candidate_tracklet["ab_dist"] * time_interval2_s
-    ) / time_interval_s  # distance likely to travel between frame b and c
-
-    r_due_to_timing = timing_uncertainty * (
-        candidate_tracklet["ab_dist"] / time_interval_s
-    )  # radians
-    r_due_to_angle = np.arctan(np.radians(180 - min_tracklet_angle) * pred_dist)
-
-    # print('r values',r_due_to_timing,r_due_to_angle)
-    r_to_search_c = pd.concat([r_due_to_timing, r_due_to_angle], axis=1).max(axis=1)
-
-    # r_to_search_c=np.max(r_due_to_timing.to_numpy,r_due_to_angle.to_numpy)
-    # print(r_to_search_c)
-    candidate_tracklet["pred_dist"] = pred_dist  # radians
-    candidate_tracklet["r_due_to_angle"] = r_due_to_angle  # radians
+    ###########################
 
     if len(candidate_tracklet) == 0:
         print("No pairs found.")
         continue  # skip to next frame triplet
-    # this next part is the distance between point a, and second point
-    # that is projected at ra_a, dec_b
-    # not precisely correct, but close enough
-    delta_dec = np.radians(candidate_tracklet["dec_b"] - candidate_tracklet["dec_a"])
-    candidate_tracklet["delta_dec"] = delta_dec
-
-    # predict where object will be in frame c
-    # you'll be searching around this point
-    delta_ra = np.radians(candidate_tracklet.ra_b) - np.radians(candidate_tracklet.ra_a)
-    delta_dec = np.radians(candidate_tracklet.dec_b) - np.radians(
-        candidate_tracklet.dec_a
-    )
-    pred_c_pos_ra = np.radians(candidate_tracklet.ra_b) + delta_ra
-    pred_c_pos_dec = np.radians(candidate_tracklet.dec_b) + delta_dec
-
-    # use yet another ball tree to see if there's any
-    # detections in expected radius from predicted position
-    # in frame c
-    pred_c = pd.DataFrame(pred_c_pos_ra, columns=["ra_rad"])
-    pred_c["dec_rad"] = pred_c_pos_dec
-
-
-    # see if anything is around the predicted position in c
-    tree_c = BallTree(c_moving[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
-    indicies_c, distances_c = tree_c.query_radius(
-        pred_c[["ra_rad", "dec_rad"]], r=r_to_search_c, return_distance=True
-    )
-
-    # if detection(s) are around precdicted position in c, then add to tracklet list.
-    point_c = []
-    dec_c = []
-    ra_c = []
-    x_c = []
-    y_c = []
-    mag_c = []
-    bc_dist = []
-    prob_c =[]
 
     # I keep thinking there's a cleaner way to do this, but
     # this works so who cares.
@@ -385,25 +278,71 @@ for m in np.arange(len(image_triplets_list)):
     # a numpy matrix so we can easily add rows and ignore others
     np_tracklets = candidate_tracklet.to_numpy()
     new_tracklets = []
+    point_c = []
+    dec_c = []
+    ra_c = []
+    mag_c = []
+    bc_dist = []
+    prob_c =[]
 
-    for i in range(len(indicies_c)):
-        if indicies_c.size > 0:
-            for j in range(len(indicies_c[i])):
-                new_tracklets.append(np_tracklets[:][i])
-                point_c.append(indicies_c[i][j])
-                dec_c.append(c_moving["Dec"][indicies_c[i][j]])
-                ra_c.append(c_moving["RA"][indicies_c[i][j]])
-                x_c.append(c_moving["xcentroid"][indicies_c[i][j]])
-                y_c.append(c_moving["ycentroid"][indicies_c[i][j]])
-                mag_c.append(c_moving["magnitude"][indicies_c[i][j]])
-                bc_dist.append(distances_c[i][j])
-        else:
-            "No length 3 tracklets found in these frames."
+    time_interval2_s = (c_time - a_time).sec
+    tree_c = BallTree(c_moving[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
+
+    for k in range(len(candidate_tracklet)):
+        # Predict location in frame c that tracklet will be.
+        # This is where your search will be centered.
+        temp_coord_a=SkyCoord(candidate_tracklet["ra_a"][k], 
+                              candidate_tracklet["dec_a"][k],
+                              unit=(u.deg, u.deg),frame='icrs')
+        temp_coord_b=SkyCoord(candidate_tracklet["ra_b"][k], 
+                              candidate_tracklet["dec_b"][k],
+                              unit=(u.deg, u.deg),frame='icrs')
+        sep = temp_coord_a.separation(temp_coord_b)
+        print("separation vs ab_dist", sep.deg, candidate_tracklet["ab_dist"][k]*(180/np.pi))
+        pos_ang = temp_coord_a.position_angle(temp_coord_b)
+        predict_c = temp_coord_b.directional_offset_by(position_angle =pos_ang, separation = sep)
+        predict_c_np= [[predict_c.ra.radian, predict_c.dec.radian]]
+        print("predicted", predict_c.ra.deg, predict_c.dec.deg)
+
+        # Determine search radius based on velocity and angle
+        # pick the bigger of the two 
+        # these are both in radians
+        r_due_to_angle = np.tan(np.radians(180 - min_tracklet_angle) * sep.rad)
+        r_due_to_timing = (time_interval2_s+timing_uncertainty) * (
+            sep.rad / time_interval_s
+        )  # radians
+        r_to_search_c=np.max([r_due_to_angle,r_due_to_timing])
+        print("r_to_search",r_to_search_c*(180/np.pi))
+
+        # see if anything is around the predicted position in c
+        indicies_c, distances_c = tree_c.query_radius(
+            predict_c_np, r=r_to_search_c, return_distance=True)
+
+        # if detection(s) are around precdicted position in c, then add to tracklet list.
+        print("len", len(indicies_c))
+
+        #THIS HAS REPEATING i INDEX, NEED TO FIX
+
+        for i in range(len(indicies_c)):
+            if indicies_c.size > 0:
+                for j in range(len(indicies_c[i])):
+                    print("i,j",i,j)
+                    new_tracklets.append(np_tracklets[:][i])
+                    point_c.append(indicies_c[i][j])
+                    dec_c.append(c_moving["Dec"][indicies_c[i][j]])
+                    ra_c.append(c_moving["RA"][indicies_c[i][j]])
+                    mag_c.append(c_moving["magnitude"][indicies_c[i][j]])
+                    bc_dist.append(distances_c[i][j])
+            else:
+                "No length 3 tracklets found in these frames."
+
+    ###########################
+
+
     # Reassemble that dataframe
     complete_tracklets = pd.DataFrame(
         new_tracklets,
         columns=[
-            "index",
             "point_a",
             "point_b",
             "ab_dist",
@@ -411,26 +350,19 @@ for m in np.arange(len(image_triplets_list)):
             "dec_b",
             "ra_a",
             "ra_b",
-            "x_a",
-            "y_a",
-            "x_b",
-            "y_b",
             "mag_a",
             "mag_b",
             "observatory_code",
             "band",
-            "pred_dist",
-            "r_due_to_angle",
-            "delta_dec",
         ],
     )
     complete_tracklets["point_c"] = point_c
     complete_tracklets["dec_c"] = dec_c
     complete_tracklets["ra_c"] = ra_c
-    complete_tracklets["x_c"] = x_c
-    complete_tracklets["y_c"] = y_c
     complete_tracklets["mag_c"] = mag_c
     complete_tracklets["bc_dist"] = bc_dist
+
+    print("after 3rd linkage",complete_tracklets)
 
 
     if len(complete_tracklets) == 0:
@@ -463,8 +395,8 @@ for m in np.arange(len(image_triplets_list)):
                 complete_tracklets.mag_c[i],
             ]
         )
-
         if (mag_max - mag_min) < max_mag_variance:
+            #print("Passed mag screening.")
             coordA = SkyCoord(
                 ra=complete_tracklets.ra_a[i],
                 dec=complete_tracklets.dec_a[i],
@@ -534,7 +466,7 @@ for m in np.arange(len(image_triplets_list)):
             tracklet_id_string= increment_identifier(starting_tracklet_id)  
         else: 
             tracklet_id_string = increment_identifier(tracklet_id_string)
-        tracklet_id = "cn" + tracklet_id_string
+        tracklet_id = tracklet_tag + tracklet_id_string
 
         coordA = SkyCoord(
             ra=complete_tracklets.ra_a[i],
@@ -679,78 +611,39 @@ for m in np.arange(len(image_triplets_list)):
                     f.close
 
             if save_tracklet_images == "y":
-                # Create figure and axes
-                # print("Saving thumbnails for tracklet:"tracklet_id)
-                image_a=return_thumbnail(
-                    complete_tracklets.x_a[i],
-                    complete_tracklets.y_a[i],
-                    telescope_image_a,
-                )
-                image_b=return_thumbnail(
-                    complete_tracklets.x_b[i],
-                    complete_tracklets.y_b[i],
-                    telescope_image_b,
-                )
-                image_c=return_thumbnail(
-                    complete_tracklets.x_c[i],
-                    complete_tracklets.y_c[i],
-                    telescope_image_c,
-                )
-
-
-                a_title='Source in frame A'
-                b_title='Source in frame B'
-                c_title='Source in frame C'
-    
-                # Title
-                fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+                fig, axs = plt.subplots(1, 3, figsize=(12, 4))
                 title_str='Tracklet:' + tracklet_id + ' Linearity metric:' + str(np.round(complete_tracklets.linearity_metric[i],4))+ ' Velocity metric:'+ str(np.round(complete_tracklets.ab_bc_vratio[i],4))
 
                 fig.suptitle(title_str, fontsize=16)
-
-                # Plot images
-                axs[0, 0].imshow(image_a, cmap='gray')
-                axs[0, 0].set_title(a_title, fontsize=8)
-                axs[0, 0].axis('off')
-
-                axs[0, 1].imshow(image_b, cmap='gray')
-                axs[0, 1].set_title(b_title, fontsize=8)
-                axs[0, 1].axis('off')
-
-                axs[0, 2].imshow(image_c, cmap='gray')
-                axs[0, 2].set_title(c_title, fontsize=8)
-                axs[0, 2].axis('off')
-
+            
                 # Plot magnitude
                 mag_list_y=[complete_tracklets.mag_a[i], complete_tracklets.mag_b[i], complete_tracklets.mag_c[i]] 
                 mag_list_x=[1,2,3]
-                axs[1, 0].scatter(mag_list_x, mag_list_y, c="purple")
-                axs[1, 0].set_title('Lightcurve')
-                axs[1, 0].set_xlabel('Gridlines are 0.5mag', fontsize=8)
-                axs[1, 0].set_ylabel('Magnitudes, mag')
-                axs[1, 0].grid(True, linestyle='--', which='both', color='gray', linewidth=0.5)
-                axs[1, 0].yaxis.set_major_locator(ticker.MultipleLocator(0.5))
-                axs[1, 0].set_xticks(mag_list_x)
-                axs[1, 0].xaxis.grid(False)
-                axs[1, 0].set_xticklabels(['A','B','C'])
+                axs[0].scatter(mag_list_x, mag_list_y, c="purple")
+                axs[0].set_title('Lightcurve')
+                axs[0].set_xlabel('Gridlines are 0.5mag', fontsize=8)
+                axs[0].set_ylabel('Magnitudes, mag')
+                axs[0].grid(True, linestyle='--', which='both', color='gray', linewidth=0.5)
+                axs[0].yaxis.set_major_locator(ticker.MultipleLocator(0.5))
+                axs[0].set_xticks(mag_list_x)
+                axs[0].xaxis.grid(False)
+                axs[0].set_xticklabels(['A','B','C'])
 
                 # Plot tracklet in RA/DEC
                 ra_list=[complete_tracklets.ra_a[i],complete_tracklets.ra_b[i],complete_tracklets.ra_c[i]]
                 dec_list=[complete_tracklets.dec_a[i],complete_tracklets.dec_b[i],complete_tracklets.dec_c[i]]
                     
                 tracklet_coord = SkyCoord(ra=ra_list, dec=dec_list, unit='deg')
-                axs[1, 1].scatter(ra_list, dec_list, c=mag_list_y, cmap='winter', label='Tracklet')
+                axs[1].scatter(ra_list, dec_list, c=mag_list_y, cmap='winter', label='Tracklet')
 
-                axs[1, 1].set_title('Tracklet position on sky.')
-                axs[1, 1].set_xlabel('RA, deg.  Gridlines are 10\'\'', fontsize=8)
-                axs[1, 1].set_ylabel('Dec, deg')
-                axs[1, 1].legend(fontsize=6)
-                axs[1, 1].grid(True, linestyle='--', which='both', color='gray', linewidth=0.5)
-                axs[1, 1].yaxis.set_major_locator(ticker.MultipleLocator(0.0027))
-                axs[1, 1].xaxis.set_major_locator(ticker.MultipleLocator(0.0027))
-            
-                axs[1, 1].set( aspect='equal')
-                #axs[1, 1].invert_xaxis() #so you match with SDSS image in axs[1, 2]
+                axs[1].set_title('Tracklet position on sky.')
+                axs[1].set_xlabel('RA, deg.', fontsize=8)
+                axs[1].set_ylabel('Dec, deg')
+                axs[1].legend(fontsize=6)
+                axs[1].grid(True, linestyle='--', which='both', color='gray', linewidth=0.5)
+                #axs[1].yaxis.set_major_locator(ticker.MultipleLocator(0.0027))
+                #axs[1].xaxis.set_major_locator(ticker.MultipleLocator(0.0027))
+                axs[1].set( aspect='equal')
 
                 # Calculate largest extent in x or y
                 x_span = max(ra_list) - min(ra_list) + 0.01
@@ -760,8 +653,8 @@ for m in np.arange(len(image_triplets_list)):
                 # Set aspect ratio manually by adjusting xlim and ylim
                 mid_x = (max(ra_list) + min(ra_list)) / 2
                 mid_y = (max(dec_list) + min(dec_list)) / 2
-                axs[1, 1].set_xlim(mid_x - max_span / 2, mid_x + max_span / 2)
-                axs[1, 1].set_ylim(mid_y - max_span / 2, mid_y + max_span / 2)
+                axs[1].set_xlim(mid_x - max_span / 2, mid_x + max_span / 2)
+                axs[1].set_ylim(mid_y - max_span / 2, mid_y + max_span / 2)
 
                 # Image of sky from another source
                 six_title = 'SDSS sky image overlayed with tracklet (red)'
@@ -782,19 +675,19 @@ for m in np.arange(len(image_triplets_list)):
                     interval = ZScaleInterval()
                     vmin, vmax = interval.get_limits(sky_image)
                     if wcs == False:
-                        axs[1, 2].imshow(sky_image.data, cmap='gray', origin='lower', vmin=vmin, vmax=vmax)
+                        axs[2].imshow(sky_image.data, cmap='gray', origin='lower', vmin=vmin, vmax=vmax)
                     else:
-                        axs[1,2].remove()
-                        axs[1, 2]= plt.subplot(236, projection=wcs)
+                        axs[2].remove()
+                        axs[2]= plt.subplot(133, projection=wcs)
                         pix_x, pix_y= tracklet_coord.to_pixel(wcs)
-                        axs[1, 2].imshow(sky_image.data, cmap='gray', origin='lower', vmin=vmin, vmax=vmax)
-                        axs[1, 2].scatter(pix_x, pix_y, marker='o', facecolors='none', edgecolors='mediumspringgreen', s=40)
-                        axs[1, 2].set_xlim(0, sky_image.data.shape[1])  
-                        axs[1, 2].set_ylim(0, sky_image.data.shape[0])  
+                        axs[2].imshow(sky_image.data, cmap='gray', origin='lower', vmin=vmin, vmax=vmax)
+                        axs[2].scatter(pix_x, pix_y, marker='o', facecolors='none', edgecolors='mediumspringgreen', s=40)
+                        axs[2].set_xlim(0, sky_image.data.shape[1])  
+                        axs[2].set_ylim(0, sky_image.data.shape[0])  
 
-                axs[1, 2].set_title(six_title, fontsize=8)
-                axs[1, 2].set_xlabel(six_xlabel, fontsize=8)
-                axs[1, 2].set_ylabel(six_ylabel)
+                axs[2].set_title(six_title, fontsize=8)
+                axs[2].set_xlabel(six_xlabel, fontsize=8)
+                axs[2].set_ylabel(six_ylabel)
 
                 #plt.show()
                 # Save figure
@@ -853,6 +746,19 @@ for m in np.arange(len(image_triplets_list)):
         if findorb_check == "y" and trackletFound == "n":  # drop it
             print("tracklet rejected")
             complete_tracklets.drop(index=[i], inplace=True)
+
+    #plot all
+    plt.scatter(a["RA"], a["Dec"], color='gold', alpha=0.6, label='Sources in A')
+    plt.scatter(b["RA"], b["Dec"], color='limegreen', alpha=0.6, label='Sources in B')
+    plt.scatter(c["RA"], c["Dec"], color='deepskyblue', alpha=0.6, label='Sources in C')
+    plt.scatter(complete_tracklets.ra_a,complete_tracklets.dec_a,marker='o', facecolors='none', edgecolors='red')
+    plt.scatter(complete_tracklets.ra_b,complete_tracklets.dec_b,marker='o', facecolors='none', edgecolors='red')
+    plt.scatter(complete_tracklets.ra_c,complete_tracklets.dec_c,marker='o', facecolors='none', edgecolors='red')
+    plt.xlabel("RA, deg")
+    plt.ylabel("Dec, deg")
+    plt.savefig("output/"+data_id+"/sources_and_tracklets_"+str(m)+".png")
+    plt.show()
+    plt.close()
 
     # save stats
     now = datetime.now()
