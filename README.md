@@ -78,11 +78,39 @@ include_image_thumbs = 'n'
 python findPOTATOs.py CSS
 
 Example 3: ATLAS
+30 linkages 
 - very close together need smaller
 - can find asteroids that change in velocity across the plane of hte sky, so increase "timing uncertainty" to ~100 s to compensate. 
 
-double linkages- ex: expanding timing_uncertainty = 5000, max_speed =  2 
+stationary_dist_deg = 0.1 * u.arcsec # the max distance between two sources in order for them
+# to be considered the same, and therefore stationary, and removed. Bigger sources may 
 
+lin_ratio_threshold = 1.5 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
+max_mag_variance = 4 #2 # the maximum amount brightness can vary across a tracklet, in mag
+max_speed =  0.1 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
+# you don't want this more than ~1/5th of the size of the frame, anything
+# faster is both unlikely and undetectable as it will leave the frame before
+# three detections can be made
+# angle between a-b-c is variable min_tracklet_angle (degrees)
+#above this threshold
+velocity_metric_threshold=50 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
+# in some sense this is controlled by how you're searching, so right now this value is vert high
+# to allow for all tracklets 
+min_tracklet_angle= 120 # minimum angle between a-b, b-c, will be used to search for det in frame c
+timing_uncertainty = 1500 # 5  # seconds
+# will pick the biggest of these to determine radius of which to search
+
+Maximum_residual = (
+    0.9  # arcseconds #This is the maximum residual allowed after orbfit fit
+)
+min_dist_deg = 0.1 # arcseconds #smallest distance you will accept an asteroid to move between frames
+findorb_check = (
+    "n"  # if =='y', check tracklets using Bill Gray's Find Orb for accuracy.
+)
+
+double linkages- ex: expanding timing_uncertainty = 5000, max_speed =  2 
+check against realtiy
+max speed too high, link everything to everything 
 
 ## How to Cite
 

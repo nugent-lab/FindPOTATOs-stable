@@ -32,28 +32,28 @@ show_sky_image = 'n' #query skyveiw for cutout of sky
 export_ades = "n"  # turn this on (='y') if you want observations exported in XML ADES format
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 
-stationary_dist_deg = 0 * u.arcsec # the max distance between two sources in order for them
+stationary_dist_deg = 0.1 * u.arcsec # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed. Bigger sources may 
 
 lin_ratio_threshold = 1.5 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
-max_mag_variance = 2 #2 # the maximum amount brightness can vary across a tracklet, in mag
-max_speed =  2 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
+max_mag_variance = 4 #2 # the maximum amount brightness can vary across a tracklet, in mag
+max_speed =  0.1 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
 # angle between a-b-c is variable min_tracklet_angle (degrees)
 #above this threshold
-velocity_metric_threshold=1 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
+velocity_metric_threshold=50 #0.001 #the allowed fractional difference between the velocity a-b and b-c. 
 # in some sense this is controlled by how you're searching, so right now this value is vert high
 # to allow for all tracklets 
-min_tracklet_angle= 100 # minimum angle between a-b, b-c, will be used to search for det in frame c
-timing_uncertainty = 5000 # 5  # seconds
+min_tracklet_angle= 120 # minimum angle between a-b, b-c, will be used to search for det in frame c
+timing_uncertainty = 1500 # 5  # seconds
 # will pick the biggest of these to determine radius of which to search
 
 Maximum_residual = (
     0.9  # arcseconds #This is the maximum residual allowed after orbfit fit
 )
-min_dist_deg = 0.0001 # arcseconds #smallest distance you will accept an asteroid to move between frames
+min_dist_deg = 0.1 # arcseconds #smallest distance you will accept an asteroid to move between frames
 findorb_check = (
     "n"  # if =='y', check tracklets using Bill Gray's Find Orb for accuracy.
 )
@@ -241,6 +241,7 @@ for m in np.arange(len(image_triplets_list)):
                 pair_id.append(tracklet_count)
                 a_source_index.append(indicies_b[i][j])
                 b_source_index.append(i)
+                print("found pair",a_moving["RA"][indicies_b[i][j]],b_moving["RA"][i])
                 ab_dist.append(distances_b[i][j])
                 dec_a.append(a_moving["Dec"][indicies_b[i][j]])
                 dec_b.append(b_moving["Dec"][i])
@@ -298,7 +299,7 @@ for m in np.arange(len(image_triplets_list)):
                               candidate_tracklet["dec_b"][k],
                               unit=(u.deg, u.deg),frame='icrs')
         sep = temp_coord_a.separation(temp_coord_b)
-        print("separation vs ab_dist", sep.deg, candidate_tracklet["ab_dist"][k]*(180/np.pi))
+        #print("separation vs ab_dist", sep.deg, candidate_tracklet["ab_dist"][k]*(180/np.pi))
         pos_ang = temp_coord_a.position_angle(temp_coord_b)
         predict_c = temp_coord_b.directional_offset_by(position_angle =pos_ang, separation = sep)
         predict_c_np= [[predict_c.ra.radian, predict_c.dec.radian]]
@@ -358,7 +359,7 @@ for m in np.arange(len(image_triplets_list)):
     complete_tracklets["mag_c"] = mag_c
     complete_tracklets["bc_dist"] = bc_dist
 
-    print("after 3rd linkage",complete_tracklets)
+    print("after 3rd linkage",len(complete_tracklets))
 
 
     if len(complete_tracklets) == 0:
