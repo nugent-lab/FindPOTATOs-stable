@@ -37,7 +37,7 @@ stationary_dist_deg = 0.1 * u.arcsec # the max distance between two sources in o
 
 lin_ratio_threshold = 1.5 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
 max_mag_variance = 4 #2 # the maximum amount brightness can vary across a tracklet, in mag
-max_speed =  0.1 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
+max_speed =  0.05 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
@@ -47,7 +47,7 @@ velocity_metric_threshold=50 #0.001 #the allowed fractional difference between t
 # in some sense this is controlled by how you're searching, so right now this value is vert high
 # to allow for all tracklets 
 min_tracklet_angle= 120 # minimum angle between a-b, b-c, will be used to search for det in frame c
-timing_uncertainty = 1500 # 5  # seconds
+timing_uncertainty = 10 # 5  # seconds
 # will pick the biggest of these to determine radius of which to search
 
 Maximum_residual = (
@@ -266,6 +266,8 @@ for m in np.arange(len(image_triplets_list)):
     candidate_tracklet["mag_b"] = mag_b
     candidate_tracklet["observatory_code"] = observatory_code
     candidate_tracklet["band"] = band
+    
+    print("mag a, mag b", candidate_tracklet["mag_a"] , candidate_tracklet["mag_b"] )
 
     ###########################
 
@@ -320,21 +322,27 @@ for m in np.arange(len(image_triplets_list)):
             predict_c_np, r=r_to_search_c, return_distance=True)
 
         # if detection(s) are around precdicted position in c, then add to tracklet list.
-        for i in range(len(indicies_c)):
-            if indicies_c.size > 0:
-                for j in range(len(indicies_c[i])):
-                    new_tracklets.append(np_tracklets[:][i])
-                    point_c.append(indicies_c[i][j])
-                    dec_c.append(c_moving["Dec"][indicies_c[i][j]])
-                    ra_c.append(c_moving["RA"][indicies_c[i][j]])
-                    mag_c.append(c_moving["magnitude"][indicies_c[i][j]])
-                    bc_dist.append(distances_c[i][j])
+
+        for j in range(len(indicies_c)):
+            try:
+                print("Dec",c_moving["Dec"][indicies_c[j][0]])
+            except:
+                nope=1
             else:
-                "No length 3 tracklets found in these frames."
+                print(i,j,np_tracklets[:][j])
+                new_tracklets.append(np_tracklets[:][k])
+                point_c.append(indicies_c[j][0])
+                dec_c.append(c_moving["Dec"][indicies_c[j][0]])
+                ra_c.append(c_moving["RA"][indicies_c[j][0]])
+                mag_c.append(c_moving["magnitude"][indicies_c[j][0]])
+                bc_dist.append(distances_c[j][0])
+        else:
+            "No length 3 tracklets found in these frames."
 
     ###########################
 
-
+    print(candidate_tracklet)
+    print(new_tracklets)
     # Reassemble that dataframe
     complete_tracklets = pd.DataFrame(
         new_tracklets,
@@ -378,6 +386,10 @@ for m in np.arange(len(image_triplets_list)):
     mag_array = []
     mag_min_array = []
     for i in range(len(complete_tracklets)):
+        print( complete_tracklets.mag_a[i],
+                complete_tracklets.mag_b[i],
+                complete_tracklets.mag_c[i],
+            )
         mag_min = np.min(
             [
                 complete_tracklets.mag_a[i],
@@ -392,8 +404,9 @@ for m in np.arange(len(image_triplets_list)):
                 complete_tracklets.mag_c[i],
             ]
         )
+        print("Magnitude thresholds", mag_max, mag_min, max_mag_variance)
         if (mag_max - mag_min) < max_mag_variance:
-            #print("Passed mag screening.")
+            print("Passed mag screening.")
             coordA = SkyCoord(
                 ra=complete_tracklets.ra_a[i],
                 dec=complete_tracklets.dec_a[i],
@@ -445,6 +458,7 @@ for m in np.arange(len(image_triplets_list)):
                 )  # because the "minimum" mag you want is the faintest one
 
         else:
+            print("Failed mag screening.")
             complete_tracklets.drop(index=[i], inplace=True)
 
     complete_tracklets.reset_index(inplace=True)
