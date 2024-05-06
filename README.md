@@ -32,14 +32,15 @@ pip install -r requirements.txt
 5. Modify settings, which are found at the beginning of findPotatos.py. This code has several options, choose what is right to you. (See Settings section, below.)
 
 6. Prepare input. The code seeks three source detection files, in ``.csv`` format. Detection are each expected to have the following values:
-
-| Name     | Value |
+| Name 	| Value |
 | -------- | ------- |
-| `id `  | String. Unique detection identifier    |
-| `RA` | Float. Right ascension of detection, degrees.     |
-| `Dec`    | Float. Declination of detection, degrees.    |
+| `id `  | String. Unique detection identifier of the detection.	|
+| `RA` | Float. Right ascension of detection, degrees. 	|
+| `Dec`	| Float. Declination of detection, degrees.	|
 |`mjd`| Float. Date and time of midpoint of observation, in Modified Julian Date format. This value should be the same for all detections in a single file|
 | `observatory_code`| MPC-assigned observatory code where observations were taken. This value should also be constant for all detections in the file.|
+|`band`| MPC-defined observing band (wavelength) of detections |
+
 
 # TBD more columns that are needed for ADES here.
 

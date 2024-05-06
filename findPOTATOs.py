@@ -35,7 +35,6 @@ export_ades = "n"  # turn this on (='y') if you want observations exported in XM
 stationary_dist_deg = 0.1 * u.arcsec # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed. Bigger sources may 
 
-lin_ratio_threshold = 1.5 #1.002 # linearity threshold, calculates distances (a-b + b-c)/(c-a), rejects 
 max_mag_variance = 4 #2 # the maximum amount brightness can vary across a tracklet, in mag
 max_speed =  0.05 #0.05 (try upt 0.8) seems to be original NEAT threshold. # maximum speed an asteroid can travel to be detected, in arcseconds/second
 # you don't want this more than ~1/5th of the size of the frame, anything
@@ -381,7 +380,6 @@ for m in np.arange(len(image_triplets_list)):
     # so do another screening.
     # this assumes an arbitrary distance to calculate angle.
     # also screens for magnitude
-    linearity_metric = []
     ab_bc_vratio = []
     mag_array = []
     mag_min_array = []
@@ -445,12 +443,9 @@ for m in np.arange(len(image_triplets_list)):
             velocity_metric= np.absolute(vdiff)*(c_time.value-a_time.value)
             #print ("velocity metric", velocity_metric, (c_time - a_time).sec, np.absolute(vdiff))
             #print ("Arcseconds moved in 30 seconds, A-B:", (lenAB /(b_time - a_time).sec)*30,"B-C:",(lenBC /(c_time - b_time).sec)*30,)
-            if lin_ratio > lin_ratio_threshold:
-                complete_tracklets.drop(index=[i], inplace=True)
-            elif (velocity_metric > velocity_metric_threshold):
+            if (velocity_metric > velocity_metric_threshold):
                 complete_tracklets.drop(index=[i], inplace=True)
             else:
-                linearity_metric.append(lin_ratio)
                 ab_bc_vratio.append(velocity_metric)
                 mag_array.append(mag_max - mag_min)
                 mag_min_array.append(
@@ -462,7 +457,6 @@ for m in np.arange(len(image_triplets_list)):
             complete_tracklets.drop(index=[i], inplace=True)
 
     complete_tracklets.reset_index(inplace=True)
-    complete_tracklets["linearity_metric"] = linearity_metric
     complete_tracklets["mag_diff"] = mag_array
     complete_tracklets["mag_min"] = mag_min_array
     complete_tracklets["ab_bc_vratio"]=ab_bc_vratio
@@ -584,8 +578,6 @@ for m in np.arange(len(image_triplets_list)):
                     f.write(
                         tracklet_id
                         + ","
-                        + str(complete_tracklets.linearity_metric[i])
-                        + ","
                         + str(complete_tracklets.mag_diff[i])
                         + ","
                         + str(complete_tracklets.mag_min[i])
@@ -601,12 +593,10 @@ for m in np.arange(len(image_triplets_list)):
             else:
                 with open(tracklet_features, "x", encoding="utf-8") as f:
                     f.write(
-                        "tracklet_id,linearity_metric,mag_diff,mag_min,residual,sky_sep,ab_bc_vratio\n"
+                        "tracklet_id,mag_diff,mag_min,residual,sky_sep,ab_bc_vratio\n"
                     )
                     f.write(
                         tracklet_id
-                        + ","
-                        + str(complete_tracklets.linearity_metric[i])
                         + ","
                         + str(complete_tracklets.mag_diff[i])
                         + ","
@@ -623,7 +613,7 @@ for m in np.arange(len(image_triplets_list)):
 
             if save_tracklet_images == "y":
                 fig, axs = plt.subplots(1, 3, figsize=(12, 4))
-                title_str='Tracklet:' + tracklet_id + ' Linearity metric:' + str(np.round(complete_tracklets.linearity_metric[i],4))+ ' Velocity metric:'+ str(np.round(complete_tracklets.ab_bc_vratio[i],4))
+                title_str='Tracklet:' + tracklet_id + ' Velocity metric:'+ str(np.round(complete_tracklets.ab_bc_vratio[i],4))
 
                 fig.suptitle(title_str, fontsize=16)
             
