@@ -61,16 +61,12 @@ tracklet_tag='test' #your unique tracklet code.
 # header information. None of these will be changed by the
 # following code.
 ades_dict = {
-    "mpcCode": "644",  # MPC-assigned observatory code
-    "observatoryName": "Palomar Mountain/NEAT",
-    "submitter": "C. R. Nugent",
-    "observers1": "K. Lawrence",
-    "observers2": "E. Helin",
-    "measurers": "C. R. Nugent",
-    "coinvestigators1": "J. (G.) Bauer",
-    "coinvestigators2": "Y. Kim",
-    "coinvestigators3": "H. C. G. Larsen",
-    "coinvestigators4": "C. C. Pedersen",
+    "mpcCode": "535",  # MPC-assigned observatory code
+    "observatoryName": "Palermo Astronomical Observatory",
+    "submitter": "D. Bowie",
+    "observers": "B. Yonce",
+    "measurers": "D. Bowie",
+    "coinvestigators": "F. Apple",
     "telescope_design": "reflector",
     "telescope_aperture": "1.1",
     "telescope_detector": "CCD",
@@ -87,16 +83,16 @@ ades_obs_dict = {
     # for unnumbered objects.
     "trkSub": "None",  # Observer-assigned tracklet identifier
     "mode": "CCD",  # Mode of instrumentation (probably CCD)
-    "stn": "644",  # Observatory code assigned by the MPC
+    "stn": "535",  # Observatory code assigned by the MPC
     # UTC date and time of the observation, ISO 8601 exended format,
     # i.e. yyyy-mm-ddThh:mm:ss.sssZ.
     # The reported time precision should be appropriate for the
     # astrometric accuracy, but no more than 6 digits are permitted
     # after the decimal. The trailing Z indicates UTC and is required.
-    "obsTime": "2016-08-29T12:23:34.12Z",
+    "obsTime": "1801-01-01T12:23:34.12Z",
     #'rmsTime': '3' #Random uncertainty in obsTime in seconds as estimated by the observer
-    "ra": "215.10254",  # decimal degrees in the J2000.0 reference frame
-    "dec": "-12.547",  # decimal degrees in the J2000.0 reference frame
+    "ra": "3.639",  # decimal degrees in the J2000.0 reference frame
+    "dec": "16.290",  # decimal degrees in the J2000.0 reference frame
     # For ra-dec and deltaRA- deltaDec observations, the random component
     # of the RA*COS(DEC) and DEC uncertainty (1-sigma) in arcsec as estimated
     # by the observer as part of the image processing and astrometric reduction.
