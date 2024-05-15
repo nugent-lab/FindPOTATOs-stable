@@ -349,4 +349,23 @@ def query_skyview(ra, dec, width_pix, height_pix, survey='SDSSr'):
 
     return sky_image, wcs
     
+
+def zero_pad(string):
+    if len(string) < 5:
+        num_zeros = 5 - len(string)
+        padded_string = string + '0' * num_zeros
+        return padded_string
+    else:
+        return string
     
+def print_dict(dictionary, indent=0):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            print('  ' * indent + str(key) + ':')
+            print_dict(value, indent + 1)
+        elif isinstance(value, list):
+            print('  ' * indent + str(key) + ':')
+            for item in value:
+                print('  ' * (indent + 1) + str(item))
+        else:
+            print('  ' * indent + str(key) + ': ' + str(value))
