@@ -57,10 +57,13 @@ We have provided examples in `sample_source_files/`. We encourage users to exper
 ### Example 1: CSS
 This example uses data from the [Catalina Sky Survey](https://catalina.lpl.arizona.edu/). 
 First copy the example parameters file to the working directory.
-`cp sample_source_files/parameters_CSS.py parameters.py`
+```
+cp sample_source_files/parameters_CSS.py parameters.py
+``` 
 Then run 
-`python findPOTATOs.py CSS`
-
+``` 
+python findPOTATOs.py CSS
+``` 
 All tracklets should be returned, as can be verified by the `sources_and_tracklets_0.png` figure. Inspect the output in the `output/` directory. Individual tracklet information is displayed in tracklet figure files in the `output/` directory as well. For real data, these figures should be inspected to ensure that the tracklet appears as you expect, and that your tracklet does not overlap with stationary sources as displayed in the SDSS thumbnail. (Note that SDSS thumbnails are not available for all regions of the sky.)
 
 ### Example 2: ATLAS
@@ -71,9 +74,14 @@ ATLAS targets close, fast-moving near-Earth objects. Because of this, FindPOTATO
 These changes mean that the search parameters in FindPOTATOs must be broader than needed for Catalina, and are an example of the types of parameter changes needed to fit different observing cadences and minor planet subgroups (such as very close approaching NEOs vs. NEOs generally vs main-belt objects vs trans-Neptunian objects.)
 
 First copy the example parameters file to the working directory.
-`cp sample_source_files/parameters_ATLAS.py parameters.py`
+
+```
+cp sample_source_files/parameters_ATLAS.py parameters.py
+``` 
 Then run 
-`python findPOTATOs.py ATLAS`
+``` 
+python findPOTATOs.py ATLAS
+``` 
 All tracklets should be returned, as can be verified by the `sources_and_tracklets_0.png` figure.
 
 ### Example 2: NEAT
@@ -81,9 +89,13 @@ The previous examples only included tracklets and no extraneous noise. To see ho
 
 This example works well with the same settings as Catalina Sky Survey.
 Copy the example parameters file to the working directory.
-`cp sample_source_files/parameters_CSS.py parameters.py`
+```
+cp sample_source_files/parameters_CSS.py parameters.py
+``` 
 Then run 
-`python findPOTATOs.py CSS`
+``` 
+python findPOTATOs.py NEAT
+``` 
 
 ## Caveats
 
