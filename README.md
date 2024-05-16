@@ -100,7 +100,7 @@ python findPOTATOs.py NEAT
 ## Caveats
 
 Please keep in mind the following caveats.
-1. Ensure that your data is clean, and does not include stationary sources. The SDSS sky image is provided to help ensure stationary sources are not present in the tracklet; however, the SDSS images are not available for all regions of the sky. It is the user's responsibility to ensure data fidelity.
+1. Ensure that your data is clean, and does not include stationary sources. The SDSS sky image is provided to help ensure stationary sources are not present in the tracklet; however, the SDSS images are not available for all regions of the sky. It is the user's responsibility to ensure data fidelity. [Aladin Lite](http://aladin.cds.unistra.fr/AladinLite/) is a good resource for ruling out stationary sources.
 2. FindPOTATOs may return multiple tracklets that contain the same detection. Before submission of tracklets to the MPC, please check to ensure that each tracklet contains unique detections.
 3. While gaining familiarity with the code, it is suggested that you check your tracklets against the MPC's [Minor Planet Checker](https://minorplanetcenter.net/cgi-bin/checkmp.cgi). Confirm that you are finding known objects in your images before submitting any unknown objects.
 4. If the `max_speed` parameter is too high, given the source density of your data, FindPOTATOs will start linking every detection to every other detection, and will slow down considerably. If too many tracklets are found, it is best to reduce `max_speed` until a manageable number of tracklets are produced.
@@ -114,6 +114,12 @@ If you use this software, or adapt it for your own purposes, please cite the fol
 2. [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
 
 3. If you use the Find_Orb-enabled screening, please cite [Bill Gray's work](https://projectpluto.com/find_orb.htm).
+
+## Other linking software 
+Before 2022, there was no publicly available minor planet detection linking software. But today, there's multiple options besides FindPOTATOs. You may be interested in:
+
+1. [Heliolinc3D](https://github.com/lsst-dm/heliolinc2)
+2. [PUMA](https://github.com/atlas-ifa/puma/tree/main)
 
 ## License 
 
