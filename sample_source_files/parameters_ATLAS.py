@@ -18,7 +18,7 @@ tracklet_tag = "test"  # string, reccomended length = 2
 save_tracklet_images = "y"  # 'y' or 'n'
 
 # query skyveiw for cutout of sky
-show_sky_image = "n"  # 'y' or 'n'
+show_sky_image = "y"  # 'y' or 'n'
 
 # turn this on (='y') if you want observations exported in XML ADES format
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html

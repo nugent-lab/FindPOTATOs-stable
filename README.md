@@ -32,14 +32,21 @@ pip install -r requirements.txt
 
 6. Prepare input (or, skip to the Examples section below). The code seeks three source detection files, in ``.csv`` format. Detection are each expected to have the following values:
 
-| Name 	| Value |
-| -------- | ------- |
-| `id `  | String. Unique detection identifier of the detection.	|
-| `RA` | Float. Right ascension of detection, degrees. 	|
-| `Dec`	| Float. Declination of detection, degrees.	|
-|`mjd`| Float. Date and time of midpoint of observation, in Modified Julian Date format. This value should be the same for all detections in a single file|
-| `observatory_code`| MPC-assigned observatory code where observations were taken. This value should also be constant for all detections in the file.|
-|`band`| MPC-defined observing band (wavelength) of detections |
+| Name 	   | Value   | Required? |
+| -------- | ------- | ------- |
+| `id `  | String. Unique detection identifier of the detection.	| yes |
+| `RA`   | Float. Right ascension of detection, degrees. 	        | yes |
+| `Dec`	| Float. Declination of detection, degrees.	                | yes |
+| `magnitude`| Float. Brightness of detection, in magnitudes.       | yes |
+|`mjd`| Float. Date and time of midpoint of observation, in Modified Julian Date format. This value should be the same for all detections in a single file                     | yes |
+| `observatory_code`| String. MPC-assigned observatory code where observations were taken. This value should also be constant for all detections in the file.                            | yes |
+|`band`| String. MPC-defined observing band (wavelength) of detections      | yes |
+|`mag_err`| Float. Uncertainty on magnitude, as defined by ADES export format. | When using ADES export format.|
+|`RA_err`| Float. Uncertainty on Right Ascension, as defined by ADES export format. | When using ADES export format.|
+|`Dec_err`| Float. Uncertainty on Declination, as defined by ADES export format. |When using ADES export format.|
+|`ml_probs`| Float. The probability that the detection is true; assigned by a machine learning algorithm.|
+No |
+
 
 It also seeks an `image_triplets.csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for a length three tracklet, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
 

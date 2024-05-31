@@ -596,7 +596,7 @@ for m in np.arange(len(image_triplets_list)):
 
                 tracklet_coord = SkyCoord(ra=ra_list, dec=dec_list, unit="deg")
                 axs[1].scatter(
-                    ra_list, dec_list, c=mag_list_y, cmap="winter", label="Tracklet"
+                    ra_list, dec_list, c="purple", label="Tracklet"
                 )
 
                 axs[1].set_title("Tracklet position on sky.")
@@ -663,7 +663,7 @@ for m in np.arange(len(image_triplets_list)):
                             pix_y,
                             marker="o",
                             facecolors="none",
-                            edgecolors="mediumspringgreen",
+                            edgecolors="red",
                             s=40,
                         )
                         axs[2].set_xlim(0, sky_image.data.shape[1])

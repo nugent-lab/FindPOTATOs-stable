@@ -18,7 +18,7 @@ tracklet_tag = "test"  # string, reccomended length = 2
 save_tracklet_images = "y"  # 'y' or 'n'
 
 # query skyveiw for cutout of sky
-show_sky_image = "n"  # 'y' or 'n'
+show_sky_image = "y"  # 'y' or 'n'
 
 # turn this on (='y') if you want observations exported in XML ADES format
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
@@ -29,21 +29,21 @@ export_ades = "y"  # 'y' or 'n'
 stationary_dist_deg = 0.1 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
-max_mag_variance = 4  # mag
+max_mag_variance = 2  # mag
 
 # maximum speed an asteroid can travel to be detected
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
-max_speed = 0.1  # arcseconds/second
+max_speed = 0.05  # arcseconds/second
 
 # The allowed fractional difference between the velocity a-b and b-c.
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 50  # unitless
+velocity_metric_threshold = 0.001  # unitless
 
 # minimum angle between a-b, b-c, will be used to search for det in frame c
-min_tracklet_angle = 120  # degrees
+min_tracklet_angle = 160  # degrees
 
 # Timing uncertanty of observations, in seconds.
 # Code will pick the biggest radius derived from min_tracklet_angle and
@@ -51,11 +51,10 @@ min_tracklet_angle = 120  # degrees
 # You can increase timing_uncertanty to increase search radius; this is
 # especially helpful if you need to find objects whose apparent speed
 # across the plane of the sky changes betweeen A-B and B-C.
-timing_uncertainty = 1500  # seconds
+timing_uncertainty = 10  # seconds
 
 # smallest distance you will accept an asteroid to move between frames
 min_dist_deg = 0.1  # arcseconds
-
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
 findorb_check = "n"  # 'y' or 'n'
@@ -68,7 +67,7 @@ Maximum_residual = 0.9  # arcseconds
 # code.
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 ades_dict = {
-    "mpcCode": "535",  # MPC-assigned observatory code
+    "mpcCode": "535", 
     "observatoryName": "Palermo Astronomical Observatory",
     "submitter": "D. Bowie",
     "observers": "B. Yonce",
@@ -120,4 +119,3 @@ ades_obs_dict = {
     # Should be used sparingly by major producers.
 }
 #################################
-
