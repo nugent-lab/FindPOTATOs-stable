@@ -184,7 +184,7 @@ for m in np.arange(len(image_triplets_list)):
                 pair_id.append(tracklet_count)
                 a_source_index.append(indicies_b[i][j])
                 b_source_index.append(i)
-                print("found pair", a_moving["RA"][indicies_b[i][j]], b_moving["RA"][i])
+                #print("found pair", a_moving["RA"][indicies_b[i][j]], b_moving["RA"][i])
                 ab_dist.append(distances_b[i][j])
                 dec_a.append(a_moving["Dec"][indicies_b[i][j]])
                 dec_b.append(b_moving["Dec"][i])
@@ -273,11 +273,12 @@ for m in np.arange(len(image_triplets_list)):
 
         for j in range(len(indicies_c)):
             try:
-                print("Dec", c_moving["Dec"][indicies_c[j][0]])
+                pass
+                #print("Dec", c_moving["Dec"][indicies_c[j][0]])
             except:
                 nope = 1
             else:
-                print(i, j, np_tracklets[:][j])
+                #print(i, j, np_tracklets[:][j])
                 new_tracklets.append(np_tracklets[:][k])
                 point_c.append(indicies_c[j][0])
                 dec_c.append(c_moving["Dec"][indicies_c[j][0]])
@@ -311,8 +312,6 @@ for m in np.arange(len(image_triplets_list)):
     complete_tracklets["mag_c"] = mag_c
     complete_tracklets["bc_dist"] = bc_dist
 
-    #print("after 3rd linkage", len(complete_tracklets))
-
     if len(complete_tracklets) == 0:
         print("No tracklets found.")
         continue  # skip to next frame triplet
@@ -328,11 +327,6 @@ for m in np.arange(len(image_triplets_list)):
     mag_array = []
     mag_min_array = []
     for i in range(len(complete_tracklets)):
-        print(
-            complete_tracklets.mag_a[i],
-            complete_tracklets.mag_b[i],
-            complete_tracklets.mag_c[i],
-        )
         mag_min = np.min(
             [
                 complete_tracklets.mag_a[i],
@@ -347,7 +341,6 @@ for m in np.arange(len(image_triplets_list)):
                 complete_tracklets.mag_c[i],
             ]
         )
-        #print("Magnitude thresholds", mag_max, mag_min, max_mag_variance)
         if (mag_max - mag_min) < max_mag_variance:
             #print("Passed mag screening.")
             coordA = SkyCoord(
@@ -384,8 +377,6 @@ for m in np.arange(len(image_triplets_list)):
             # objects.
             vdiff = (lenAB / (b_time - a_time).sec) - (lenBC / (c_time - b_time).sec)
             velocity_metric = np.absolute(vdiff) * (c_time.value - a_time.value)
-            # print ("velocity metric", velocity_metric, (c_time - a_time).sec, np.absolute(vdiff))
-            # print ("Arcseconds moved in 30 seconds, A-B:", (lenAB /(b_time - a_time).sec)*30,"B-C:",(lenBC /(c_time - b_time).sec)*30,)
             if velocity_metric > velocity_metric_threshold:
                 complete_tracklets.drop(index=[i], inplace=True)
             else:
@@ -408,8 +399,6 @@ for m in np.arange(len(image_triplets_list)):
 
     # now filter based on findorb
     for i in range(len(complete_tracklets)):
-        # print(complete_tracklets["point_a"][i], complete_tracklets["point_b"][i],complete_tracklets["point_c"][i])
-
         if tracklet_num == 0:
             tracklet_id_string = increment_identifier(starting_tracklet_id)
         else:
@@ -500,9 +489,7 @@ for m in np.arange(len(image_triplets_list)):
 
         if (findorb_check == "y" and trackletFound == "y") or findorb_check == "n":
             tracklet_num += 1
-            # print("Candidate tracklet found!\n", formatted_data)
             print("Candidate tracklet ", tracklet_id, " found!")
-
             # print("Source IDs:",complete_tracklets["point_a"][i], complete_tracklets["point_b"][i],complete_tracklets["point_c"][i])
 
             if exists(trackletfilename):
