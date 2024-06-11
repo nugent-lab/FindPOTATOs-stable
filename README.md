@@ -50,9 +50,15 @@ It also seeks an `image_triplets.csv` file. Each row of this file should be the 
 
 6. Run using
 ``` 
-python3 findPOTATOS.py
+python3 findPOTATOS.py [fileID]
 ```
-By default, the code will produce observations in MPC 80-char format.
+`fileID` is a string that identifies the input files, see below for examples. By default, the code will produce observations in MPC 80-char format. 
+
+7. (Optional) Remove tracklets with duplicate detections. The MPC will not accept a submission if multiple tracklets share a single detection. You can identify these and weed them out using `remove_duplicates.py` and the following call:
+
+``` 
+python3 remove_duplicates.py [fileID]
+```
 
 
 ## Examples
@@ -116,9 +122,9 @@ Please keep in mind the following caveats.
 
 ## How to Cite
 
-If you use this software, or adapt it for your own purposes, please cite the following papers:
+If you us or adapt this software please cite the following:
 
-1. Tan and Nugent et al., in prep, FINDPOTATOs: Open-source asteroid linking software accelerated by binary trees
+1. C. R. Nugent, N. Tan, and J. Bauer, FINDPOTATOs: Minor Planet Observation Linking Software (submitted)
 
 2. [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
 
@@ -129,6 +135,7 @@ Before 2022, there was no publicly available minor planet detection linking soft
 
 1. [Heliolinc3D](https://github.com/lsst-dm/heliolinc2)
 2. [PUMA](https://github.com/atlas-ifa/puma/tree/main)
+3. [THOR](https://github.com/moeyensj/thor)
 
 ## License 
 
