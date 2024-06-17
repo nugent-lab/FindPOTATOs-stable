@@ -5,10 +5,12 @@ This software links together minor planet detections to form a tracklet. Trackle
 
 This software is designed to be robust and can accurately find near-Earth Objects (NEOs) as well as Trans-Neptunian Objects (TNOs). Written in Python, this software gets its incredible speed from the use of Ball Tree algorithms. These structures efficiently partition space and reduce searching time during various steps through the algorithm. 
 
-The code assembles length-three tracklets from three candidate detection sets. In the code, they are labeled A, B, and C. However, the code is intended to be flexible and customizable, and could be adapted to a range of cadences. If you adapt this code, please cite this work (see Section "How to Cite", below.)
+The code assembles length-three tracklets from three candidate detection sets. In the code, they are labeled A, B, and C. However, the code is intended to be flexible and customizable, and could be adapted to a range of cadences. 
 
-This builds upon substantial work by Nicole Tan (University of Canterbury), with further work by Prof. [Carrie Nugent](https://crnugent.com) (Olin College). Usability improvements were contributed by Steve Matsumoto. If you'd like more information on the original version of this code, see [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
+If you adapt this code, please cite this work. [How to Cite.](#how-to-cite)
 
+## Authors
+This builds upon Nicole Tan's (University of Canterbury) [Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199). Further development and validation was done by [Carrie Nugent](https://crnugent.com) (Olin College). Valuable feedback was provided by [James "Gerbs" Bauer](https://www.astro.umd.edu/people/gerbsb.html) (University of Maryland). Usability improvements were contributed by [Steve Matsumoto](https://www.olin.edu/bios/steve-matsumoto) (Olin College). 
 
 ## Setup
 
@@ -25,11 +27,11 @@ source venv/bin/activate
 ```
 pip install -r requirements.txt
 ```
-4. (Recommended) To be most effective, this code relies on Find_Orb to screen the found tracklets. To install Find_Orb on your machine, follow the instructions here: https://projectpluto.com/install.htm 
+4. (Optional) To be most effective, this code relies on Find_Orb to screen the found tracklets. To install Find_Orb on your machine, follow the instructions here: https://projectpluto.com/install.htm 
 
-5. Modify settings, which are found at the beginning of findPotatos.py. This code has several options, choose what is right to you. (See Settings section, below.)
+5. Modify settings, which are found at the beginning of `findPOTATOs.py`. This code has several options, choose what is right to you. (See [Examples](#examples).)
 
-6. Prepare input (or, skip to the Examples section below). The code seeks three source detection files, in ``.csv`` format. Detection are each expected to have the following values:
+6. Prepare input (or, skip to [Examples](#examples)). The code seeks three source detection files, in ``.csv`` format. Detection are each expected to have the following values:
 
 | Name 	   | Value   | Required? |
 | -------- | ------- | ------- |
@@ -60,10 +62,8 @@ python3 findPOTATOS.py [fileID]
 python3 remove_duplicates.py [fileID]
 ```
 
-
 ## Examples
-We have provided examples in `sample_source_files/`. We encourage users to experiment with these examples to increase their understanding of how the code works and how to change the parameters for their particular dataset.
-
+We have provided examples in `sample_source_files/`. We encourage users to experiment with these examples to increase their understanding of how the code works and how to change the parameters for their particular dataset. Installation of Find_Orb is not needed for these examples.
 
 ### Example 1: CSS
 This example uses data from the [Catalina Sky Survey](https://catalina.lpl.arizona.edu/). 
