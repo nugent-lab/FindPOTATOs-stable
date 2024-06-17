@@ -7,7 +7,7 @@ This software is designed to be robust and can accurately find near-Earth Object
 
 The code assembles length-three tracklets from three candidate detection sets. In the code, they are labeled A, B, and C. However, the code is intended to be flexible and customizable, and could be adapted to a range of cadences. If you adapt this code, please cite this work (see Section "How to Cite", below.)
 
-This builds upon substantial work by Nicole Tan (University of Canterbury), with further work by Prof. [Carrie Nugent](https://cnugent.com) (Olin College). Usability improvements were contributed by Steve Matsumoto. If you'd like more information on the original version of this code, see [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
+This builds upon substantial work by Nicole Tan (University of Canterbury), with further work by Prof. [Carrie Nugent](https://crnugent.com) (Olin College). Usability improvements were contributed by Steve Matsumoto. If you'd like more information on the original version of this code, see [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
 
 
 ## Setup
