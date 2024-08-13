@@ -12,17 +12,17 @@ starting_tracklet_id = "00000"  # string, length = 5
 
 # your unique tracklet code, will precede the tracklet id
 # your tracklets will be named tracklet_tag+starting_tracklet_id
-tracklet_tag = "test"  # string, reccomended length = 2
+tracklet_tag = "aa"  # string, reccomended length = 2
 
-# turn this on (='y') if you want to save diagnostic images and plots of each tracklet
-save_tracklet_images = "y"  # 'y' or 'n'
+# turn this on if you want to save diagnostic images and plots of each tracklet
+save_tracklet_images = True
 
 # query skyveiw for cutout of sky
-show_sky_image = "y"  # 'y' or 'n'
+show_sky_image = True  
 
 # turn this on (='y') if you want observations exported in XML ADES format
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
-export_ades = "y"  # 'y' or 'n'
+export_ades = True
 
 # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
@@ -37,13 +37,13 @@ max_mag_variance = 4  # mag
 # three detections can be made
 max_speed = 0.1  # arcseconds/second
 
-# The allowed fractional difference between the velocity a-b and b-c.
+# Maximum standard deviation in velocity between detections
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 50  # unitless
+velocity_metric_threshold = 1  # arcseconds/second
 
 # minimum angle between a-b, b-c, will be used to search for det in frame c
-min_tracklet_angle = 120  # degrees
+min_tracklet_angle = 120 * u.deg
 
 # Timing uncertanty of observations, in seconds.
 # Code will pick the biggest radius derived from min_tracklet_angle and
@@ -51,17 +51,24 @@ min_tracklet_angle = 120  # degrees
 # You can increase timing_uncertanty to increase search radius; this is
 # especially helpful if you need to find objects whose apparent speed
 # across the plane of the sky changes betweeen A-B and B-C.
-timing_uncertainty = 1500  # seconds
+timing_uncertainty = 5000  # 1500 seconds
 
 # smallest distance you will accept an asteroid to move between frames
 min_dist_deg = 0.1  # arcseconds
 
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
-findorb_check = "n"  # 'y' or 'n'
+findorb_check = False
 # values below this threshold will be rejected
-Maximum_residual = 0.9  # arcseconds
+maximum_residual = 0.9  # arcseconds
 
+# Optional; screen on ml_probs associated with sources
+# this is intended to allow the use of a machine learning
+# algorithm to assign a probability of source "realness" 
+# to each detection
+# If the input file doesn't have a column named ml_probs
+# then the code will ignore and move on.
+ml_thresh=0.55
 
 ########## ADES PARAMETERS ##########
 # header information. None of these will be changed by the

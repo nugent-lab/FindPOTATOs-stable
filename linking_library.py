@@ -6,15 +6,13 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-from astroquery.gaia import Gaia
 from astroquery.skyview import SkyView
-from astroquery.simbad import Simbad
 import astropy.units as u
-from astropy.time import Time
 from astropy.coordinates import SkyCoord
+import matplotlib.ticker as ticker
+from astropy.visualization import ZScaleInterval
 from astropy.wcs import WCS
 from sklearn.neighbors import BallTree
-from astroquery.ipac.irsa import Irsa
 
 def remove_file_if_exists(filename):
     """
@@ -49,10 +47,10 @@ def find_orb(maxResidual, nullResid=True, MOIDLim=False):
         maxResidual: float, maximum residual allowed for tracklet to be approved
 
     Returns:
-        trackletFound: string, equals 'yes' if passed
+        tracklet_found: string, equals True if passed
         res: associated residual with found tracklet
     """
-    trackletFound = "n"
+    tracklet_found = False
     elements_path = "~/.find_orb/elements.txt"  # for mac
     if os.path.exists(os.path.expanduser(elements_path)):
         os.remove(os.path.expanduser(elements_path))
@@ -117,142 +115,72 @@ def find_orb(maxResidual, nullResid=True, MOIDLim=False):
                         print("MOID:", MOID, " exceeds MOIDLim:", MOIDLIM)
                         break
         if resCheck:
-            trackletFound = "y"
+            tracklet_found = True
 
     else:
         print("Could not open file", os.path.expanduser(elements_path))
-    return trackletFound, res
+    return tracklet_found, res
 
 
-def remove_stationary_sources(df1, df2, df3, thresh, showplots='n'):
+def remove_stationary_sources(source_dataframes, thresh, showplots=False):
     """
-    Compares three dataframes, removes sources that are at same coordinate
+    Compares dataframes, removes sources that are at same coordinate
     location to within threshold. Returns cleaned dataframes that
     consist of transitory sources.
 
-    The for loop through the matches is a bit unpythonic, could be
-    improved but works for now.
-
     Args:
-        df1: first dataset to be considered, dataframe. Needs columns ra_rad, dec_rad (ra and dec in radians).
-        df2: second dataset that will be compared to first.  Needs columns ra_rad, dec_rad (ra and dec in radians).
-        df3: third datset that will be compared to first.  Needs columns ra_rad, dec_rad (ra and dec in radians).
+        source_dataframes: dictionary of dataframes of sources
         thresh: threshold in arcsec that we should consider stationary sources, in arcseconds.
-
+        showplots: flag to show plots or not
     Returns:
-        df1_moving: just the transitory sources in the first dataframe
-        df2_moving: just the transitory sources in the second dataframe
-        df3_moving: just the transitory sources in the third dataframe
+        source_dataframes: dictionary of dataframes, with just the transitory sources
     """
-    if showplots=='y':
-        plt.scatter(df1.RA, df1.Dec, color='red', alpha=0.4, label='A')
-        plt.scatter(df2.RA, df2.Dec, color='blue',alpha=0.4, label='B')
-        plt.scatter(df3.RA, df3.Dec, color='yellow', alpha=0.4, label='C')
+    if showplots:
+        for name, df in source_dataframes.items():
+            plt.scatter(df.RA, df.Dec, alpha=0.4, label=name)
+        plt.title("Sources before stationary cleaning.")
+        plt.xlabel("Right ascension (degrees)")
+        plt.ylabel("Declination (degrees)")
+        plt.legend()
         plt.show()
         plt.close()
-    # convert threshold (arsec) to degrees, then to radians
+
     thresh_rad = np.radians(thresh.to(u.deg).value)
-    # print("thresh_rad",thresh_rad)
 
-    # intialize output dataframes
-    # gonna delete the duplicates from the df?_moving dataframes
-    df1_moving = df1.copy(deep=True)
-    df2_moving = df2.copy(deep=True)
-    df3_moving = df3.copy(deep=True)
+    for key, df in source_dataframes.items():
+        dupes_array_sum=np.zeros(len(df))
+        for key2, df2 in source_dataframes.items(): #remove duplicates
+            if key != key2: #but only compare different frames
+                #print("Comparing", key, key2)
+                tree=BallTree(df2[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
+                indicies = tree.query_radius(df[["ra_rad", "dec_rad"]], r=thresh_rad)
+                for i in range(len(indicies)): #for each source in df
+                    if len(indicies[i]) > 0: #these are the matches in df2
+                        dupes_array_sum[i] += 1 #source in df has match in df2
+                    else:
+                        dupes_array_sum[i] += 0 #source in df does not have match
+        #identify the duplicates but don't delete them, you'll need to reference
+        # them as this loop goes on
+        df["dupes"]=dupes_array_sum
 
-    tree1 = BallTree(df1[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
-    tree2 = BallTree(df2[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
-    tree3 = BallTree(df3[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
+    # Clean duplicates after all comparison is done.
+    source_dataframes_moving = {f'{key}_moving': df.copy() for key, df in source_dataframes.items()}
+    for key, df in source_dataframes_moving.items():
+        df = df[df['dupes'] < 1]
+        df.reset_index(inplace=True, drop=True)
 
-    # compare 1 to 2
-    dupes_array1_2=[]
-    indicies = tree2.query_radius(df1[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array1_2.append(1)
-        else:
-            dupes_array1_2.append(0)
-    # compare 1 to 3
-    dupes_array1_3=[]
-    indicies = tree3.query_radius(df1[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array1_3.append(1)
-        else:
-            dupes_array1_3.append(0)
-
-    df1_moving["dupes1_2"] = dupes_array1_2
-    df1_moving["dupes1_3"] = dupes_array1_3
-    df1_moving = df1_moving[df1_moving['dupes1_2'] < 1]
-    df1_moving = df1_moving[df1_moving['dupes1_3'] < 1]
-
-    # compare 2 to 1
-    dupes_array2_1=[]
-    indicies = tree1.query_radius(df2[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array2_1.append(1)
-        else:
-            dupes_array2_1.append(0)
-    # compare 2 to 3
-    dupes_array2_3=[]
-    indicies = tree3.query_radius(df2[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array2_3.append(1)
-        else:
-            dupes_array2_3.append(0)
-    
-    df2_moving["dupes2_1"] = dupes_array2_1
-    df2_moving["dupes2_3"] = dupes_array2_3
-    df2_moving = df2_moving[df2_moving['dupes2_1'] < 1]
-    df2_moving = df2_moving[df2_moving['dupes2_3'] < 1]
-
-    # compare 3 to 1
-    dupes_array3_1=[]
-    indicies = tree1.query_radius(df3[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array3_1.append(1)
-        else:
-            dupes_array3_1.append(0)
-    
-    # compare 3 to 2
-    dupes_array3_2=[]
-    indicies = tree2.query_radius(df3[["ra_rad", "dec_rad"]], r=thresh_rad)
-    for i in range(len(indicies)): #for each source in df2
-        if len(indicies[i]) > 0: #these are the matches in df1
-            dupes_array3_2.append(1)
-        else:
-            dupes_array3_2.append(0)
-    
-    df3_moving["dupes3_1"] = dupes_array3_1
-    df3_moving["dupes3_2"] = dupes_array3_2
-    df3_moving = df3_moving[df3_moving['dupes3_1'] < 1]
-    df3_moving = df3_moving[df3_moving['dupes3_2'] < 1]
-
-    # Reset index after dropping rows
-    df1_moving.reset_index(inplace=True, drop=True)
-    df2_moving.reset_index(inplace=True, drop=True)
-    df3_moving.reset_index(inplace=True, drop=True)
-
-    # print(
-    #     "Percentage of sources remaining from original dataframes df1, df2, df3:",
-    #     round(len(df1_moving) / len(df1), 2),
-    #     round(len(df2_moving) / len(df2), 2),
-    #     round(len(df3_moving) / len(df3), 2),
-    # )
-    if showplots=='y':
-        plt.scatter(df1.RA, df1.Dec, color='red', alpha=0.2, label='A')
-        plt.scatter(df2.RA, df2.Dec, color='blue',alpha=0.2, label='B')
-        plt.scatter(df3.RA, df3.Dec, color='yellow', alpha=0.2, label='C')
-        plt.scatter(df1_moving.RA, df1_moving.Dec, color='black', alpha=1, label='A')
-        plt.scatter(df2_moving.RA, df2_moving.Dec, color='black',alpha=1, label='B')
-        plt.scatter(df3_moving.RA, df3_moving.Dec, color='black', alpha=1, label='C')
+    if showplots:
+        for name, df in source_dataframes.items():
+            plt.scatter(df.RA, df.Dec, alpha=0.4, label=name)
+        for name2, df2 in source_dataframes_moving.items():
+            plt.scatter(df2.RA, df2.Dec, color='black', alpha=1, label=name2)
+        plt.title("Sources after stationary cleaning. Transitory sources are black.")
+        plt.xlabel("Right ascension (degrees)")
+        plt.ylabel("Declination (degrees)")
+        plt.legend()
         plt.show()
         plt.close()
-    # convert threshold (
-    return df1_moving, df2_moving, df3_moving
+    return source_dataframes_moving
 
 
 def return_thumbnail(x_pos, y_pos, telescope_image):
@@ -369,3 +297,155 @@ def print_dict(dictionary, indent=0):
                 print('  ' * (indent + 1) + str(item))
         else:
             print('  ' * indent + str(key) + ': ' + str(value))
+
+def format_data (tracklet):
+    """
+    Format data in the Minor Planet Center (MPC) 80-char format
+    Args:
+        tracklet (df):a dataframe of tracklet information
+            
+    Returns:
+        formatted_data (str): string with proper formatting
+    """
+    first=True
+    for index, row in tracklet.iterrows():
+        if first:
+            formatted_data = "     "
+            first = False
+        else:
+            formatted_data += "     "
+        obstime=row["tracklet_time"].strftime("%Y %m %d")
+        coord=row["coords"]
+        formatted_data += "{}".format(row["tracklet_id"]) + "  C"
+        formatted_data += "{}".format(obstime) + "."
+        formatted_data += "{:1}".format(row["decimal_time"]) + " "
+        formatted_data += (
+            coord.to_string(style="hmsdms", pad=True, sep=" ", precision=2)
+            + "         "
+        )
+        formatted_data += "{:.1f}".format(row["mag"]) + "   "
+        formatted_data += (
+            row["band"]
+            + "    "
+            + str(row["observatory_code"])
+            + "\n"
+        )
+    return formatted_data
+
+def create_diagnostic_figure(tracklet, figname, show_sky_image):
+    """
+    Args:
+        tracklet (df): dataframe with relevant tracklet information
+        figname (str) : string with name of figure 
+        show_sky_image (bool): if you want image of the sky from SDSS
+    Returns:
+        none, though it will save an image
+    """
+            
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+    title_str = (
+        "Tracklet:"
+        + tracklet["tracklet_id"].iloc[0]
+        + " Velocity metric:"
+        + str(np.round(tracklet["vdiff"].std(), 4))
+    )
+    fig.suptitle(title_str, fontsize=16)
+
+    # Plot magnitude
+    axs[0].scatter(np.arange(len(tracklet)),tracklet["mag"], c="purple")
+    axs[0].set_title("Lightcurve")
+    axs[0].set_xlabel("Gridlines are 0.5mag", fontsize=8)
+    axs[0].set_ylabel("Magnitudes, mag")
+    axs[0].grid(
+        True, linestyle="--", which="both", color="gray", linewidth=0.5
+    )
+    axs[0].yaxis.set_major_locator(ticker.MultipleLocator(0.5))
+    axs[0].set_xticks(np.arange(len(tracklet)))
+    axs[0].xaxis.grid(False)
+
+    # Plot tracklet in RA/DEC
+    #tracklet_coord = SkyCoord(ra=tracklet["ra"], dec=tracklet["dec"], unit="deg")
+    ra_list=tracklet["ra"]
+    dec_list=tracklet["dec"]
+    axs[1].scatter(
+        ra_list, dec_list, c="purple", label="Tracklet"
+    )
+    axs[1].set_title("Tracklet position on sky.")
+    axs[1].set_xlabel("RA, deg.", fontsize=8)
+    axs[1].set_ylabel("Dec, deg")
+    axs[1].legend(fontsize=6)
+    axs[1].grid(
+        True, linestyle="--", which="both", color="gray", linewidth=0.5
+    )
+    # axs[1].yaxis.set_major_locator(ticker.MultipleLocator(0.0027))
+    # axs[1].xaxis.set_major_locator(ticker.MultipleLocator(0.0027))
+    axs[1].set(aspect="equal")
+
+    # Calculate largest extent in x or y
+    x_span = max(ra_list) - min(ra_list) + 0.01
+    y_span = max(dec_list) - min(dec_list) + 0.01
+    max_span = max(x_span, y_span)
+
+    # Set aspect ratio manually by adjusting xlim and ylim
+    mid_x = (max(ra_list) + min(ra_list)) / 2
+    mid_y = (max(dec_list) + min(dec_list)) / 2
+    axs[1].set_xlim(mid_x - max_span / 2, mid_x + max_span / 2)
+    axs[1].set_ylim(mid_y - max_span / 2, mid_y + max_span / 2)
+
+    # Image of sky from another source
+    six_title = "SDSS sky image overlayed with tracklet (red)"
+    six_xlabel = "Reject tracklet if circles overlap sources."
+    six_ylabel = ""
+    xspan_deg = u.Quantity(x_span, unit=u.deg)
+    yspan_deg = u.Quantity(y_span, unit=u.deg)
+    width_pix = xspan_deg.to(u.arcsec).value / 0.396
+    height_pix = yspan_deg.to(u.arcsec).value / 0.396
+
+    if show_sky_image == True:
+        sky_image, wcs = query_skyview(
+            tracklet["ra"].mean(),
+            tracklet["dec"].mean(),
+            np.round(width_pix),
+            np.round(height_pix),
+        )
+        interval = ZScaleInterval()
+        vmin, vmax = interval.get_limits(sky_image)
+        if wcs == False:
+            axs[2].imshow(
+                sky_image.data,
+                cmap="gray",
+                origin="lower",
+                vmin=vmin,
+                vmax=vmax,
+            )
+        else:
+            axs[2].remove()
+            axs[2] = plt.subplot(133, projection=wcs)
+            pix_x, pix_y = tracklet["coords"][1].to_pixel(wcs)
+            axs[2].imshow(
+                sky_image.data,
+                cmap="gray",
+                origin="lower",
+                vmin=vmin,
+                vmax=vmax,
+            )
+            axs[2].scatter(
+                pix_x,
+                pix_y,
+                marker="o",
+                facecolors="none",
+                edgecolors="red",
+                s=40,
+            )
+            axs[2].set_xlim(0, sky_image.data.shape[1])
+            axs[2].set_ylim(0, sky_image.data.shape[0])
+
+    axs[2].set_title(six_title, fontsize=8)
+    axs[2].set_xlabel(six_xlabel, fontsize=8)
+    axs[2].set_ylabel(six_ylabel)
+
+    # plt.show()
+    plt.tight_layout()
+    plt.savefig(figname)
+    plt.close("all")
+    return

@@ -3,11 +3,11 @@
 ## Summary
 This software links together minor planet detections to form a tracklet. Tracklets are required so that minor planet observations can be submitted to the [Minor Planet Center](https://minorplanetcenter.net). 
 
-This software is designed to be robust and can accurately find near-Earth Objects (NEOs) as well as Trans-Neptunian Objects (TNOs). Written in Python, this software gets its incredible speed from the use of Ball Tree algorithms. These structures efficiently partition space and reduce searching time during various steps through the algorithm. 
+This software is designed to be robust and can accurately find near-Earth Objects (NEOs) as well as Trans-Neptunian Objects (TNOs). Written in Python, this software gets its speed from the use of Ball Tree algorithms. These structures efficiently partition data and reduce searching time during various steps through the algorithm. 
 
-The code assembles length-three tracklets from three candidate detection sets. In the code, they are labeled A, B, and C. However, the code is intended to be flexible and customizable, and could be adapted to a range of cadences. 
+The code assembles tracklets from candidate detection sets. 
 
-If you adapt this code, please cite this work. [How to Cite.](#how-to-cite)
+We encourage users to make modifications to fit their particular needs. If you adapt this code, please cite this work. [How to Cite.](#how-to-cite) We welcome pull requests.
 
 ## Authors
 This builds upon Nicole Tan's (University of Canterbury) [Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199). Further development and validation was done by [Carrie Nugent](https://crnugent.com) (Olin College). Valuable feedback was provided by [James "Gerbs" Bauer](https://www.astro.umd.edu/people/gerbsb.html) (University of Maryland). Usability improvements were contributed by [Steve Matsumoto](https://www.olin.edu/bios/steve-matsumoto) (Olin College). 
@@ -35,7 +35,6 @@ pip install -r requirements.txt
 
 | Name 	   | Value   | Required? |
 | -------- | ------- | ------- |
-| `id `  | String. Unique detection identifier of the detection.	| yes |
 | `RA`   | Float. Right ascension of detection, degrees. 	        | yes |
 | `Dec`	| Float. Declination of detection, degrees.	                | yes |
 | `magnitude`| Float. Brightness of detection, in magnitudes.       | yes |
@@ -48,7 +47,7 @@ pip install -r requirements.txt
 |`ml_probs`| Float. The probability that the detection is true; assigned by a machine learning algorithm.| No |
 
 
-It also seeks an `image_triplets.csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for a length three tracklet, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
+It also seeks an `image_triplets.csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for tracklets, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
 
 6. Run using
 ``` 

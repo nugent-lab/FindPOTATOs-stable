@@ -4,7 +4,7 @@ import xml.dom.minidom as minidom
 # T. Linder, June 2023
 # refactored by C. Nugent, September 2023
 
-def generate_xml(filename, data, obs_data):
+def generate_xml(data, obs_data):
     """
     Takes all the ADES 2017 data and puts it into XML tree.
     Call this program the first time you're creating the 
@@ -166,18 +166,3 @@ if __name__ == "__main__":
         #field, but that may be of relevance for interpretation of the observations. 
         #Should be used sparingly by major producers.
     }
-    # xml_filename="Catalog.xml"
-
-    # # generate the header and the first observation.
-    # XMLElement, ades, obsData=generate_xml(xml_filename,ades_dict, ades_obs_dict)
-
-    # #update your observations dictionary with your new obs
-    # obs_dict['mag']=10
-    # # update the xml
-    # XMLElement, ades, obsData=update_xml(XMLElement, ades, obsData, ades_obs_dict)
-    
-    # # write the ADES xml to file
-    # tree = XMLElement.ElementTree(ades)
-    # xml_string = minidom.parseString(XMLElement.tostring(ades)).toprettyxml()
-    # with open(xml_filename, 'w', encoding="UTF-8") as files:
-    #     files.write(xml_string)
