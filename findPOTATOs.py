@@ -45,7 +45,7 @@ if export_ades:
         "You've chosen to export to ADES format. Please review these ADES parameters for accuracy. If anything is incorrect, quit with ctrl-D and update the values in parameters.py."
     )
     print_dict(ades_dict)
-    name = input("Press any key to continue.")
+    blank = input("Press any key to continue.")
     print(
         "Please review these observation-related ADES parameters for accuracy. Please refrence the ADES documentation if you have questions. If anything is incorrect, quit with ctrl-D and update the values in parameters.py."
     )
@@ -55,10 +55,10 @@ if export_ades:
     print("rmsMag:", ades_obs_dict["rmsMag"])
     print("band:", ades_obs_dict["band"])
     print("photCat:", ades_obs_dict["photCat"])
-    name = input("Press any key to continue.")
+    blank = input("Press any key to continue.")
 
 
-input_filename = "image_triplets_" + str(data_id) + ".csv"
+input_filename = "image_groups_" + str(data_id) + ".csv"
 image_series_list = pd.read_csv(input_filename)
 tracklet_num = 0
 
@@ -84,13 +84,19 @@ for m in np.arange(len(image_series_list)):
         init_filename=image_series_list.iloc[m,n]
         names.append(init_filename)
         # read in dataframe to get time
-        inital_df=pd.read_csv(input_directory + init_filename)
-        frame_time=Time(inital_df.mjd[0].astype(float), format="mjd", scale="utc")
-        times.append(frame_time)
-        decimal_time=str(frame_time).split(".")
-        decimal_time = decimal_time[1][:5]
-        decimal_time = zero_pad(decimal_time)
-        decimal_times.append(decimal_time)
+        try:
+            inital_df=pd.read_csv(input_directory + init_filename)
+            frame_time=Time(inital_df.mjd[0].astype(float), format="mjd", scale="utc")
+            times.append(frame_time)
+            decimal_time=str(frame_time).split(".")
+            decimal_time = decimal_time[1][:5]
+            decimal_time = zero_pad(decimal_time)
+            decimal_times.append(decimal_time)
+        except:
+            print("Files not found.")
+            stop = True
+    if stop:
+        continue
     order_frames = pd.DataFrame(
         {
             "name": names,
@@ -102,9 +108,9 @@ for m in np.arange(len(image_series_list)):
     order_frames.reset_index(inplace=True)
 
     # creates dictionary of dataframes, df0, df1, etc
-    source_dataframes = {f'df{i}': pd.read_csv(input_directory + order_frames.name[i]) for i in range(len(order_frames))}
+    source_dataframes = {f'df{n}': pd.read_csv(input_directory+"o_sources"+image_series_list.iloc[m,n]+".csv") for n in range(len(order_frames))}
     print(
-        f"Checking file triplet number {m}, consisting of: "
+        f"Checking file group number {m}, consisting of: "
         + ", ".join(order_frames.name)
     )
 
@@ -118,16 +124,19 @@ for m in np.arange(len(image_series_list)):
             # Add 'ml_prob' column with NaN values
             df['ml_probs'] = np.nan
         else: 
-            print("Removing detections with a ml-assigned probability of being point sources less than:", ml_thresh)
-            df=df[df['ml_probs'] >= ml_thresh]
-            df.reset_index(inplace=True, drop=True)
+            old_size=len(df)
+            source_dataframes[name] = df[df['ml_probs'] >= ml_thresh]
+            source_dataframes[name].reset_index(inplace=True, drop=True)
+            print("Removed detections with a ml-assigned probability of being point sources less than:", ml_thresh, "in", name)
+            print("Fraction",np.round(len(source_dataframes[name])/old_size,2),"remaining.")
+
 
     # Remove stationary sources
     source_dataframes_moving = remove_stationary_sources(
         source_dataframes, stationary_dist_deg, showplots=False
     )
     # if any frames are empty after ML and/or stationary source screening, then no tracklets will
-    # be found here. Skip to next frame triplet
+    # be found here. Skip to next frame group
     stop=False
     for key, df in source_dataframes.items():
         if df.empty:
@@ -188,6 +197,13 @@ for m in np.arange(len(image_series_list)):
                     "tracklet_time" : [order_frames.time[0], order_frames.time[1]],
                     "decimal_time" : [order_frames.decimal_time[0], order_frames.decimal_time[1]],
                 }
+                if export_ades:
+                    ades_data ={
+                        "mag_err" : [df0["mag_err"][indicies_b[i][j]], df1["mag_err"][i]],
+                        "RA_err"  : [df0["RA_err"][indicies_b[i][j]], df1["RA_err"][i]],
+                        "Dec_err"  : [df0["Dec_err"][indicies_b[i][j]], df1["Dec_err"][i]],
+                    }
+                    row_data.update(ades_data)
                 temp_tracklet = pd.DataFrame(row_data)
                 tracklets[f"df_{tracklet_count}"] = temp_tracklet
                 tracklet_count += 1
@@ -284,7 +300,13 @@ for m in np.arange(len(image_series_list)):
                             "tracklet_time" : order_frames.time[link_index],
                             "decimal_time" : order_frames.decimal_time[link_index]
                             }
-                        #print("new_link", new_link)
+                        if export_ades:
+                            ades_data ={
+                                "mag_err" : next_sources_df["mag_err"][found_index],
+                                "RA_err"  : next_sources_df["RA_err"][found_index],
+                                "Dec_err"  : next_sources_df["Dec_err"][found_index],
+                            }
+                            new_link.update(ades_data)
                         if j == 0:
                             #print("one possible linkage.", j)
                             tracklet_df.loc[link_index+1]  = new_link
@@ -307,7 +329,7 @@ for m in np.arange(len(image_series_list)):
 
     if not tracklets:
         print("No tracklets found.")
-        continue  # skip to next frame triplet
+        continue  # skip to next frame group
 
     # # Tracklet screening
     tracklet_num = 0 
@@ -379,7 +401,9 @@ for m in np.arange(len(image_series_list)):
                     ades_obs_dict["ra"] = np.round(ades_ra, 5)
                     ades_obs_dict["dec"] = np.round(ades_dec, 5)
                     ades_obs_dict["mag"] = "{:.1f}".format(row["mag"])
-
+                    ades_obs_dict["rmsMag"] = row["mag_err"]
+                    ades_obs_dict["rmsRA"] = row["RA_err"]
+                    ades_obs_dict["rmsDec"] = row["Dec_err"]
                     if not xml_tracklet_found:  # first tracklet found, write header
                         xml_tracklet_found = True
                         XMLElement, ades_result, obsData = generate_xml(
@@ -415,8 +439,8 @@ for m in np.arange(len(image_series_list)):
     now = datetime.now()
     yearmonthday = now.strftime("%Y%m%d")
     outputname = "output/" + data_id + "/o_linking_log" + data_id + ".csv"
-    run_time = str(now - start_time)
-    print("run time",str(run_time))
+    run_time = str(np.round((now - start_time).total_seconds(),1))
+    print("run time",run_time,"seconds.")
     num_sources = str(len(tracklets))
 
     header = "filea,date_corrected,run_time_s,num_sources,export_ades,max_speed,velocity_metric_threshold,min_tracklet_angle,timing_uncertainty,max_mag_variance,maximum_residual,min_dist_deg,findorb_check,stationary_dist_deg\n"
@@ -437,11 +461,12 @@ for m in np.arange(len(image_series_list)):
         )
         f.write(stat_string)
         f.close()
-
-if export_ades:
-    # write the ADES xml to file
-    tree = XMLElement.ElementTree(ades_result)
-    xml_string = minidom.parseString(XMLElement.tostring(ades_result)).toprettyxml()
-    with open(xml_filename, "w", encoding="UTF-8") as files:
-        files.write(xml_string)
-    print("Successfully ouput ADES file.")
+        
+if not stop:
+    if export_ades:
+        # write the ADES xml to file
+        tree = XMLElement.ElementTree(ades_result)
+        xml_string = minidom.parseString(XMLElement.tostring(ades_result)).toprettyxml()
+        with open(xml_filename, "w", encoding="UTF-8") as files:
+            files.write(xml_string)
+        print("Successfully ouput ADES file.")

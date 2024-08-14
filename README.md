@@ -10,7 +10,7 @@ The code assembles tracklets from candidate detection sets.
 We encourage users to make modifications to fit their particular needs. If you adapt this code, please cite this work. [How to Cite.](#how-to-cite) We welcome pull requests.
 
 ## Authors
-This builds upon Nicole Tan's (University of Canterbury) [Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199). Further development and validation was done by [Carrie Nugent](https://crnugent.com) (Olin College). Valuable feedback was provided by [James "Gerbs" Bauer](https://www.astro.umd.edu/people/gerbsb.html) (University of Maryland). Usability improvements were contributed by [Steve Matsumoto](https://www.olin.edu/bios/steve-matsumoto) (Olin College). 
+This builds upon Nicole Tan's (University of Canterbury) [Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199). Further development and validation was done by [Carrie Nugent](https://crnugent.com) (Olin College). Valuable feedback was provided by [James "Gerbs" Bauer](https://www.astro.umd.edu/people/gerbsb.html) (University of Maryland). 
 
 ## Setup
 
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 |`ml_probs`| Float. The probability that the detection is true; assigned by a machine learning algorithm.| No |
 
 
-It also seeks an `image_triplets.csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for tracklets, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
+It also seeks an `image_groups_[label].csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for tracklets, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
 
 6. Run using
 ``` 
