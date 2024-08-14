@@ -29,21 +29,21 @@ export_ades = True
 stationary_dist_deg = 0.1 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
-max_mag_variance = 2  # mag
+max_mag_variance = 4  # mag
 
 # maximum speed an asteroid can travel to be detected
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
-max_speed = 0.05  # arcseconds/second
+max_speed = 0.1  # arcseconds/second
 
 # Maximum standard deviation in velocity between detections
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 0.01   # arcseconds/second
+velocity_metric_threshold = 1  # arcseconds/second
 
 # minimum angle between a-b, b-c, will be used to search for det in frame c
-min_tracklet_angle = 160  # degrees
+min_tracklet_angle = 120 * u.deg
 
 # Timing uncertanty of observations, in seconds.
 # Code will pick the biggest radius derived from min_tracklet_angle and
@@ -51,13 +51,14 @@ min_tracklet_angle = 160  # degrees
 # You can increase timing_uncertanty to increase search radius; this is
 # especially helpful if you need to find objects whose apparent speed
 # across the plane of the sky changes betweeen A-B and B-C.
-timing_uncertainty = 10  # seconds
+timing_uncertainty = 5000  # 1500 seconds
 
 # smallest distance you will accept an asteroid to move between frames
 min_dist_deg = 0.1  # arcseconds
 
+
 # Check tracklets using Bill Gray's Find Orb for accuracy.
-findorb_check = False  
+findorb_check = False
 # values below this threshold will be rejected
 maximum_residual = 0.9  # arcseconds
 
@@ -74,7 +75,7 @@ ml_thresh=0.55
 # code.
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 ades_dict = {
-    "mpcCode": "535", 
+    "mpcCode": "535",  # MPC-assigned observatory code
     "observatoryName": "Palermo Astronomical Observatory",
     "submitter": "D. Bowie",
     "observers": "B. Yonce",
@@ -126,3 +127,4 @@ ades_obs_dict = {
     # Should be used sparingly by major producers.
 }
 #################################
+

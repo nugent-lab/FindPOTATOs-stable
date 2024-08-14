@@ -72,6 +72,7 @@ remove_file_if_exists(xml_filename)
 if export_ades:
     xml_tracklet_found = False
 
+stop = False
 for m in np.arange(len(image_series_list)):
     start_time = datetime.now() # so you can record running time
     # make dataframe of each set
@@ -108,7 +109,7 @@ for m in np.arange(len(image_series_list)):
     order_frames.reset_index(inplace=True)
 
     # creates dictionary of dataframes, df0, df1, etc
-    source_dataframes = {f'df{n}': pd.read_csv(input_directory+"o_sources"+image_series_list.iloc[m,n]+".csv") for n in range(len(order_frames))}
+    source_dataframes = {f'df{n}': pd.read_csv(input_directory+image_series_list.iloc[m,n]) for n in range(len(order_frames))}
     print(
         f"Checking file group number {m}, consisting of: "
         + ", ".join(order_frames.name)

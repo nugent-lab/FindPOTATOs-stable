@@ -47,7 +47,7 @@ pip install -r requirements.txt
 |`ml_probs`| Float. The probability that the detection is true; assigned by a machine learning algorithm.| No |
 
 
-It also seeks an `image_groups_[label].csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for tracklets, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
+The code seeks an `image_groups_[label].csv` file. Each row of this file should be the names of the `.csv` detection files that will be searched for tracklets, seperated by commas. These detection files need to be of the same region of the sky. They do not need to be listed in this file in the order they will taken, FINDPOTATOs will sort that out for you based on the `mjd` values.
 
 6. Run using
 ``` 
@@ -63,6 +63,8 @@ python3 remove_duplicates.py [fileID]
 
 ## Examples
 We have provided examples in `sample_source_files/`. We encourage users to experiment with these examples to increase their understanding of how the code works and how to change the parameters for their particular dataset. Installation of Find_Orb is not needed for these examples.
+
+The uncertanties associated with brigtness and position in this example data are placeholder values, and are not actual values associated with measurements by sky surveys.
 
 ### Example 1: CSS
 This example uses data from the [Catalina Sky Survey](https://catalina.lpl.arizona.edu/). 
