@@ -26,7 +26,7 @@ export_ades = True
 
 # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
-stationary_dist_deg = 0.1 * u.arcsec
+stationary_dist_deg = 0.5 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
 max_mag_variance = 4  # mag
@@ -45,13 +45,12 @@ velocity_metric_threshold = 1  # arcseconds/second
 # minimum angle between a-b, b-c, will be used to search for det in frame c
 min_tracklet_angle = 120 * u.deg
 
-# Timing uncertanty of observations, in seconds.
 # Code will pick the biggest radius derived from min_tracklet_angle and
-# timing_uncertanty to determine search radius.
+# min_search_radius to determine search radius.
 # You can increase timing_uncertanty to increase search radius; this is
 # especially helpful if you need to find objects whose apparent speed
 # across the plane of the sky changes betweeen A-B and B-C.
-timing_uncertainty = 5000  # 1500 seconds
+min_search_radius = 5 * u.arcsec
 
 # smallest distance you will accept an asteroid to move between frames
 min_dist_deg = 0.1  # arcseconds

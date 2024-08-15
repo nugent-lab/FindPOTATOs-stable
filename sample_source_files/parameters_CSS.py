@@ -26,7 +26,7 @@ export_ades = True
 
 # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
-stationary_dist_deg = 0.1 * u.arcsec
+stationary_dist_deg = 0.5 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
 max_mag_variance = 2  # mag
@@ -40,21 +40,20 @@ max_speed = 0.05  # arcseconds/second
 # Maximum standard deviation in velocity between detections
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 0.01   # arcseconds/second
+velocity_metric_threshold = 0.25   # arcseconds/second
 
 # minimum angle between a-b, b-c, will be used to search for det in frame c
-min_tracklet_angle = 160  # degrees
+min_tracklet_angle = 160 * u.deg
 
-# Timing uncertanty of observations, in seconds.
 # Code will pick the biggest radius derived from min_tracklet_angle and
-# timing_uncertanty to determine search radius.
+# min_search_radius to determine search radius.
 # You can increase timing_uncertanty to increase search radius; this is
 # especially helpful if you need to find objects whose apparent speed
 # across the plane of the sky changes betweeen A-B and B-C.
-timing_uncertainty = 10  # seconds
+min_search_radius = 5 * u.arcsec
 
 # smallest distance you will accept an asteroid to move between frames
-min_dist_deg = 0.1  # arcseconds
+min_dist_deg = 1.0  # arcseconds
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
 findorb_check = False  
@@ -67,7 +66,7 @@ maximum_residual = 0.9  # arcseconds
 # to each detection
 # If the input file doesn't have a column named ml_probs
 # then the code will ignore and move on.
-ml_thresh=0.55
+ml_thresh=0.90
 
 ########## ADES PARAMETERS ##########
 # header information. None of these will be changed by the

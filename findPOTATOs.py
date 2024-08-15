@@ -9,7 +9,6 @@ from sklearn.neighbors import BallTree
 from os.path import exists
 from astropy.coordinates import SkyCoord, Angle, Distance
 import sys
-#import fitsio  # if you want thumbnails of sources
 from linking_library import *
 from ades import *
 from parameters import *
@@ -19,7 +18,7 @@ from parameters import *
 #  C.R. Nugent, N. Tan, S. Matsumoto
 # Version 2.0, can create linkages of length > 3
 
-data_id = sys.argv[1]
+data_id=str(sys.argv[1])
 
 print("Running with the following parameters from parameters.py")
 print("Input directory:", input_directory)
@@ -33,7 +32,7 @@ print("Max magnitude variance:", max_mag_variance)
 print("Max speed:", max_speed)
 print("Velocity metric threshold:", velocity_metric_threshold)
 print("Min tracklet angle:", min_tracklet_angle)
-print("Timing uncertainty:", timing_uncertainty)
+print("Min search radius:", min_search_radius)
 print("Maximum residual:", maximum_residual)
 print("Min distance:", min_dist_deg)
 print("Findorb check:", findorb_check)
@@ -73,6 +72,8 @@ if export_ades:
     xml_tracklet_found = False
 
 stop = False
+tracklet_count=0
+tracklet_num = 0 
 for m in np.arange(len(image_series_list)):
     start_time = datetime.now() # so you can record running time
     # make dataframe of each set
@@ -105,11 +106,11 @@ for m in np.arange(len(image_series_list)):
             "decimal_time": decimal_times,
         }
     )
-    order_frames.sort_values(by=["time"], inplace=True)
-    order_frames.reset_index(inplace=True)
+    order_frames.sort_values(by=["time"], inplace=True, ignore_index= True)
+    order_frames.reset_index(inplace=True, drop=True)
 
     # creates dictionary of dataframes, df0, df1, etc
-    source_dataframes = {f'df{n}': pd.read_csv(input_directory+image_series_list.iloc[m,n]) for n in range(len(order_frames))}
+    source_dataframes = {f'df{n}': pd.read_csv(input_directory+order_frames['name'].iloc[n]) for n in range(len(order_frames))}
     print(
         f"Checking file group number {m}, consisting of: "
         + ", ".join(order_frames.name)
@@ -139,7 +140,7 @@ for m in np.arange(len(image_series_list)):
     # if any frames are empty after ML and/or stationary source screening, then no tracklets will
     # be found here. Skip to next frame group
     stop=False
-    for key, df in source_dataframes.items():
+    for key, df in source_dataframes_moving.items():
         if df.empty:
             print("One of the frames has no sutiable sources. Skipping to next iteration.")
             print("Empty frame is ", key)
@@ -156,14 +157,14 @@ for m in np.arange(len(image_series_list)):
     time_interval_s = (order_frames.time[1] - order_frames.time[0]).sec
     max_dist_rad = np.radians(max_speed * time_interval_s / 3600)
     min_dist_rad = np.radians(min_dist_deg / 3600)
-    df0= source_dataframes_moving['df0_moving']
-    df1= source_dataframes_moving['df1_moving']
+    df0= source_dataframes_moving['df0_moving'].copy(deep=True)
+    df1= source_dataframes_moving['df1_moving'].copy(deep=True)
     tree_a = BallTree(df0[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
     indicies_b, distances_b = tree_a.query_radius(
         df1[["ra_rad", "dec_rad"]], r=max_dist_rad, return_distance=True
     )
     tracklets = {} # this will be dictionary of dataframes, each df is a tracklet
-    tracklet_count=0
+
     # We want every source in a that is within a certain radius of each source in b, but not too slow.
     for i in range(len(indicies_b)):
         for j in range(len(indicies_b[i])):
@@ -211,6 +212,7 @@ for m in np.arange(len(image_series_list)):
 
     if tracklet_count == 0:
         print("No pairs found.")
+        stop = True
         continue  # skip to next frame
 
     # Seek future links
@@ -221,8 +223,10 @@ for m in np.arange(len(image_series_list)):
         for key, tracklet_df in tracklets.items(): #iterate over tracklet set
             if len(tracklet_df) == number_links:
                 link_index=number_links-1
+                # time between this frame and the previous one 
+                old_time_interval_s = (order_frames.time[number_links-1] - order_frames.time[number_links-2]).sec
                 # time between this frame and the next one 
-                time_interval_s = (order_frames.time[link_index+1] - order_frames.time[link_index]).sec
+                next_time_interval_s= (order_frames.time[number_links] - order_frames.time[number_links-1]).sec
                 #print("time interval", time_interval_s)
                 # make tree of place you're looking
                 next_sources='df'+str(link_index+1)+'_moving'
@@ -231,38 +235,38 @@ for m in np.arange(len(image_series_list)):
                 # Predict location in frame that next source, if it exists, will be.
                 # This is where your search will be centered.
                 temp_coord_a = SkyCoord(
-                    tracklet_df["ra"][link_index-1],
-                    tracklet_df["dec"][link_index-1],
+                    tracklet_df["ra"][number_links-2],
+                    tracklet_df["dec"][number_links-2],
                     unit=(u.deg, u.deg),
                     frame="icrs",
                 )
                 temp_coord_b = SkyCoord(
-                    tracklet_df["ra"][link_index],
-                    tracklet_df["dec"][link_index],
+                    tracklet_df["ra"][number_links-1],
+                    tracklet_df["dec"][number_links-1],
                     unit=(u.deg, u.deg),
                     frame="icrs",
                 )
                 sep_prev = temp_coord_a.separation(temp_coord_b)
                 pos_ang = temp_coord_a.position_angle(temp_coord_b)
-                predict_c = temp_coord_b.directional_offset_by(
-                    position_angle=pos_ang, separation=sep_prev
-                )
+                time_ratio=next_time_interval_s/old_time_interval_s
+                c_ra, c_dec = temp_coord_a.spherical_offsets_to(temp_coord_b)
+                predict_c = temp_coord_b.spherical_offsets_by(c_ra*time_ratio, c_dec*time_ratio)
                 predict_c_np = [[predict_c.ra.radian, predict_c.dec.radian]]
                 predict_sep=temp_coord_b.separation(predict_c)
 
-                # Determine search radius based on time uncertantiy & velcoity, or angle
+                # Determine search radius based on time uncertantiy & velocity, or angle
                 # pick the bigger of the two
                 # these are both in radians
+                added_angle=(pos_ang+(180 * u.deg -min_tracklet_angle))
                 predict_c_high_angle = temp_coord_b.directional_offset_by(
-                    position_angle=min_tracklet_angle, separation=sep_prev
+                    position_angle=added_angle, separation=sep_prev*time_ratio
                 )
                 #calculate separation between high_angle and predicted c
                 predict_angle_sep=predict_c.separation(predict_c_high_angle)
 
                 r_due_to_angle = predict_angle_sep.rad
-                r_due_to_timing = timing_uncertainty * (predict_sep.rad / time_interval_s)  # radians
-                #print("searching ", predict_angle_sep.arcsec, np.degrees(r_due_to_timing)*3600)
-                r_to_search_c = np.max([r_due_to_angle, r_due_to_timing])
+                #print("searching ", predict_angle_sep.arcsec, min_search_radius)
+                r_to_search_c = np.max([r_due_to_angle, min_search_radius.to(u.rad).value])
                 #print("r_to_search",np.degrees(r_to_search_c)*3600)
 
                 # see if anything is around the predicted position in c
@@ -285,7 +289,7 @@ for m in np.arange(len(image_series_list)):
                             frame="icrs",
                         )  
                         #print("angular", (temp_coord_b.separation(new_coord).arcsecond))
-                        vdiff = (temp_coord_b.separation(new_coord).arcsecond) / time_interval_s
+                        vdiff = (temp_coord_b.separation(new_coord).arcsecond) / next_time_interval_s
                         current_mag=next_sources_df["magnitude"][found_index]
 
                         new_link = {
@@ -298,8 +302,8 @@ for m in np.arange(len(image_series_list)):
                             "ab_dist" : distances_c[0][j],
                             "coords" :new_coord,
                             "vdiff" : vdiff,
-                            "tracklet_time" : order_frames.time[link_index],
-                            "decimal_time" : order_frames.decimal_time[link_index]
+                            "tracklet_time" : order_frames.time[number_links],
+                            "decimal_time" : order_frames.decimal_time[number_links],
                             }
                         if export_ades:
                             ades_data ={
@@ -310,12 +314,12 @@ for m in np.arange(len(image_series_list)):
                             new_link.update(ades_data)
                         if j == 0:
                             #print("one possible linkage.", j)
-                            tracklet_df.loc[link_index+1]  = new_link
-
+                            tracklet_df.loc[number_links]  = new_link
+                            tracklet_df_orig=tracklet_df.copy(deep = True)
                         else:
-                            #print("multiple possible linkages.")
-                            new_df = tracklet_df.copy(deep = True)
-                            new_df.loc[link_index+1]  = new_link
+                            print("multiple possible linkages.")
+                            new_df = tracklet_df_orig.copy(deep = True)
+                            new_df.loc[number_links]  = new_link
                             new_key_str= key +str(j)
                             new_tracklets.append((new_key_str, new_df))  # Append new tracklet data
                             
@@ -333,7 +337,6 @@ for m in np.arange(len(image_series_list)):
         continue  # skip to next frame group
 
     # # Tracklet screening
-    tracklet_num = 0 
     sys.stdout.flush()  # print out everything before running FindOrb
     keys_to_delete = []
     for key,df in tracklets.items():
@@ -342,9 +345,9 @@ for m in np.arange(len(image_series_list)):
         mag_max=df["mag"].max()
         if (mag_max - mag_min) < max_mag_variance:
             #print("Passed mag screening with variance", np.round(mag_max - mag_min,3), "mag")       
-            velocity_metric=df["vdiff"].std()
+            velocity_metric=abs(df["vdiff"].std()/df["vdiff"].mean())
             if velocity_metric < velocity_metric_threshold:
-                #print("Passed velocity metric screening:", np.round(velocity_metric,6))
+                print("Passed velocity metric screening:", np.round(velocity_metric,6))
                 if tracklet_num == 0:
                     tracklet_id_string = increment_identifier(starting_tracklet_id)
                 else:
@@ -376,7 +379,6 @@ for m in np.arange(len(image_series_list)):
             
         if tracklet_found: # Export tracklet information.
             print(formatted_data)
-
             # 80-char MPC data
             if exists(trackletfilename):
                 with open(trackletfilename, "a", encoding="utf-8") as f:
@@ -389,7 +391,7 @@ for m in np.arange(len(image_series_list)):
             
             if save_tracklet_images:
                 figname=  "output/"+ data_id+ "/tracklet_"+ data_id+ "_"+ tracklet_id+ ".png"
-                create_diagnostic_figure(df, figname, show_sky_image)
+                create_diagnostic_figure(df, figname, show_sky_image, velocity_metric)
             
             if export_ades:
                 # update keys in obsData dictionary for all points
@@ -444,7 +446,7 @@ for m in np.arange(len(image_series_list)):
     print("run time",run_time,"seconds.")
     num_sources = str(len(tracklets))
 
-    header = "filea,date_corrected,run_time_s,num_sources,export_ades,max_speed,velocity_metric_threshold,min_tracklet_angle,timing_uncertainty,max_mag_variance,maximum_residual,min_dist_deg,findorb_check,stationary_dist_deg\n"
+    header = "filea,date_corrected,run_time_s,num_sources,export_ades,max_speed,velocity_metric_threshold,min_tracklet_angle,min_search_radius,max_mag_variance,maximum_residual,min_dist_deg,findorb_check,stationary_dist_deg\n"
     if not exists(outputname):
         mode = "x"
     else:
@@ -457,12 +459,11 @@ for m in np.arange(len(image_series_list)):
         stat_string = (
             f"{order_frames.name[0]},{datetime.today().strftime('%Y-%m-%d')},{run_time},"
             f"{num_sources},{export_ades},{max_speed},{velocity_metric_threshold},{min_tracklet_angle},"
-            f"{timing_uncertainty},{max_mag_variance},{maximum_residual},{min_dist_deg},"
+            f"{min_search_radius},{max_mag_variance},{maximum_residual},{min_dist_deg},"
             f"{findorb_check},{stationary_dist_deg}\n"
         )
         f.write(stat_string)
         f.close()
-        
 if not stop:
     if export_ades:
         # write the ADES xml to file

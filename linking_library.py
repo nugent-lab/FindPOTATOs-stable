@@ -332,7 +332,7 @@ def format_data (tracklet):
         )
     return formatted_data
 
-def create_diagnostic_figure(tracklet, figname, show_sky_image):
+def create_diagnostic_figure(tracklet, figname, show_sky_image, velocity_metric):
     """
     Args:
         tracklet (df): dataframe with relevant tracklet information
@@ -347,7 +347,7 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image):
         "Tracklet:"
         + tracklet["tracklet_id"].iloc[0]
         + " Velocity metric:"
-        + str(np.round(tracklet["vdiff"].std(), 4))
+        + str(np.round(velocity_metric, 4))
     )
     fig.suptitle(title_str, fontsize=16)
 
