@@ -29,21 +29,21 @@ export_ades = True
 stationary_dist_deg = 0.5 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
-max_mag_variance = 4  # mag
+max_mag_variance = 2  # mag
 
 # maximum speed an asteroid can travel to be detected
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
-max_speed = 0.1  # arcseconds/second
+max_speed = 0.05  # arcseconds/second
 
 # Maximum standard deviation in velocity between detections
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 1  # arcseconds/second
+velocity_metric_threshold = 0.25   # arcseconds/second
 
 # minimum angle between a-b, b-c, will be used to search for det in frame c
-min_tracklet_angle = 120 * u.deg
+min_tracklet_angle = 160 * u.deg
 
 # Code will pick the biggest radius derived from min_tracklet_angle and
 # min_search_radius to determine search radius.
@@ -53,11 +53,10 @@ min_tracklet_angle = 120 * u.deg
 min_search_radius = 5 * u.arcsec
 
 # smallest distance you will accept an asteroid to move between frames
-min_dist_deg = 0.1  # arcseconds
-
+min_dist_deg = 1.0  # arcseconds
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
-findorb_check = False
+findorb_check = False  
 # values below this threshold will be rejected
 maximum_residual = 0.9  # arcseconds
 
@@ -67,14 +66,14 @@ maximum_residual = 0.9  # arcseconds
 # to each detection
 # If the input file doesn't have a column named ml_probs
 # then the code will ignore and move on.
-ml_thresh=0.55
+ml_thresh=0.90
 
 ########## ADES PARAMETERS ##########
 # header information. None of these will be changed by the
 # code.
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 ades_dict = {
-    "mpcCode": "535",  # MPC-assigned observatory code
+    "mpcCode": "535", 
     "observatoryName": "Palermo Astronomical Observatory",
     "submitter": "D. Bowie",
     "observers": "B. Yonce",
@@ -126,4 +125,3 @@ ades_obs_dict = {
     # Should be used sparingly by major producers.
 }
 #################################
-

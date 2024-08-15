@@ -164,7 +164,7 @@ for m in np.arange(len(image_series_list)):
         df1[["ra_rad", "dec_rad"]], r=max_dist_rad, return_distance=True
     )
     tracklets = {} # this will be dictionary of dataframes, each df is a tracklet
-
+    
     # We want every source in a that is within a certain radius of each source in b, but not too slow.
     for i in range(len(indicies_b)):
         for j in range(len(indicies_b[i])):
