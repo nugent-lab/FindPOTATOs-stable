@@ -71,10 +71,11 @@ remove_file_if_exists(xml_filename)
 if export_ades:
     xml_tracklet_found = False
 
-stop = False
+
 tracklet_count=0
 tracklet_num = 0 
 for m in np.arange(len(image_series_list)):
+    stop = False
     start_time = datetime.now() # so you can record running time
     # make dataframe of each set
     # sort by time
@@ -116,12 +117,8 @@ for m in np.arange(len(image_series_list)):
         + ", ".join(order_frames.name)
     )
 
-    # The nearest neighbors code (balltree, haversine metric)
-    # needs RA and Dec in radians. We'll use this later.
-    # we will also screen on ml_probs
+    # Screen on ml_probs
     for name, df in source_dataframes.items():
-        df["ra_rad"] = np.radians(df["RA"])
-        df["dec_rad"] = np.radians(df["Dec"])
         if 'ml_probs' not in df.columns:
             # Add 'ml_prob' column with NaN values
             df['ml_probs'] = np.nan
@@ -155,37 +152,34 @@ for m in np.arange(len(image_series_list)):
     # Minimum speed an asteroid can travel to be detected, in arcseconds/second
     # this is calculated based on our astromemtric accuracy and time between frames
     time_interval_s = (order_frames.time[1] - order_frames.time[0]).sec
-    max_dist_rad = np.radians(max_speed * time_interval_s / 3600)
+    max_dist_arcsec=max_speed * time_interval_s
+    max_dist_rad = np.radians(max_dist_arcsec/3600)
     min_dist_rad = np.radians(min_dist_deg / 3600)
     df0= source_dataframes_moving['df0_moving'].copy(deep=True)
     df1= source_dataframes_moving['df1_moving'].copy(deep=True)
-    tree_a = BallTree(df0[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
+    tree_a = BallTree(df0[["RA", "Dec"]], leaf_size=5, metric='pyfunc', func=angular_separation_metric)
     indicies_b, distances_b = tree_a.query_radius(
-        df1[["ra_rad", "dec_rad"]], r=max_dist_rad, return_distance=True
+        df1[["RA", "Dec"]], r=max_dist_arcsec, return_distance=True
     )
     tracklets = {} # this will be dictionary of dataframes, each df is a tracklet
-    
     # We want every source in a that is within a certain radius of each source in b, but not too slow.
     for i in range(len(indicies_b)):
+        coordB= SkyCoord(
+            ra=df1["RA"][i],
+            dec=df1["Dec"][i],
+            unit=(u.deg, u.deg),
+            frame="icrs",
+        ) 
         for j in range(len(indicies_b[i])):
-            if distances_b[i][j] > min_dist_rad:
-                #print("found pair", a_moving["RA"][indicies_b[i][j]], b_moving["RA"][i])
-                coordA= SkyCoord(
-                    ra=df0["RA"][indicies_b[i][j]],
-                    dec=df0["Dec"][indicies_b[i][j]],
-                    unit=(u.deg, u.deg),
-                    frame="icrs",
-                )   
-                coordB= SkyCoord(
-                    ra=df1["RA"][i],
-                    dec=df1["Dec"][i],
-                    unit=(u.deg, u.deg),
-                    frame="icrs",
-                )   
+            coordA= SkyCoord(
+                ra=df0["RA"][indicies_b[i][j]],
+                dec=df0["Dec"][indicies_b[i][j]],
+                unit=(u.deg, u.deg),
+                frame="icrs",
+            )   
+            if distances_b[i][j] > min_dist_deg / 3600: 
                 time_delta=(order_frames.time[1] - order_frames.time[0]).sec
-                #print("time_delta",time_delta)
-                #print("angular",coordA.separation(coordB).arcsecond )
-                vdiff = (coordA.separation(coordB).arcsecond / time_delta)
+                vdiff = (distances_b[i][j] / time_delta)
                 row_data = {
                     "ra":[df0["RA"][indicies_b[i][j]], df1["RA"][i]],
                     "dec":[df0["Dec"][indicies_b[i][j]],df1["Dec"][i]],
@@ -193,7 +187,7 @@ for m in np.arange(len(image_series_list)):
                     "observatory_code":[df0["observatory_code"][indicies_b[i][j]], df1["observatory_code"][i]],
                     "band":[df0["band"][indicies_b[i][j]], df1["band"][i]],
                     "ml_probs":[df0["ml_probs"][indicies_b[i][j]], df1["ml_probs"][i]],
-                    "ab_dist":[0,distances_b[i][j]],
+                    "ang_sep_arcsec":[0,distances_b[i][j]],
                     "coords" :[coordA,coordB],
                     "vdiff" : [np.nan, vdiff],
                     "tracklet_time" : [order_frames.time[0], order_frames.time[1]],
@@ -220,18 +214,17 @@ for m in np.arange(len(image_series_list)):
     while number_links < len(order_frames): 
         new_tracklets = []
         print("Searching for links with", number_links+1,"detections.")
+        link_index=number_links-1
+        # time between this frame and the previous one 
+        old_time_interval_s = (order_frames.time[number_links-1] - order_frames.time[number_links-2]).sec
+        # time between this frame and the next one 
+        next_time_interval_s= (order_frames.time[number_links] - order_frames.time[number_links-1]).sec
+        # make tree of place you're looking
+        next_sources='df'+str(link_index+1)+'_moving'
+        next_sources_df=source_dataframes_moving[next_sources]
+        tree_next = BallTree(next_sources_df[["RA", "Dec"]], leaf_size=5,  metric='pyfunc', func=angular_separation_metric)
         for key, tracklet_df in tracklets.items(): #iterate over tracklet set
             if len(tracklet_df) == number_links:
-                link_index=number_links-1
-                # time between this frame and the previous one 
-                old_time_interval_s = (order_frames.time[number_links-1] - order_frames.time[number_links-2]).sec
-                # time between this frame and the next one 
-                next_time_interval_s= (order_frames.time[number_links] - order_frames.time[number_links-1]).sec
-                #print("time interval", time_interval_s)
-                # make tree of place you're looking
-                next_sources='df'+str(link_index+1)+'_moving'
-                next_sources_df=source_dataframes_moving[next_sources]
-                tree_next = BallTree(next_sources_df[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
                 # Predict location in frame that next source, if it exists, will be.
                 # This is where your search will be centered.
                 temp_coord_a = SkyCoord(
@@ -251,7 +244,7 @@ for m in np.arange(len(image_series_list)):
                 time_ratio=next_time_interval_s/old_time_interval_s
                 c_ra, c_dec = temp_coord_a.spherical_offsets_to(temp_coord_b)
                 predict_c = temp_coord_b.spherical_offsets_by(c_ra*time_ratio, c_dec*time_ratio)
-                predict_c_np = [[predict_c.ra.radian, predict_c.dec.radian]]
+                predict_c_np = [[predict_c.ra.deg, predict_c.dec.deg]]
                 predict_sep=temp_coord_b.separation(predict_c)
 
                 # Determine search radius based on time uncertantiy & velocity, or angle
@@ -264,10 +257,8 @@ for m in np.arange(len(image_series_list)):
                 #calculate separation between high_angle and predicted c
                 predict_angle_sep=predict_c.separation(predict_c_high_angle)
 
-                r_due_to_angle = predict_angle_sep.rad
-                #print("searching ", predict_angle_sep.arcsec, min_search_radius)
-                r_to_search_c = np.max([r_due_to_angle, min_search_radius.to(u.rad).value])
-                #print("r_to_search",np.degrees(r_to_search_c)*3600)
+                r_due_to_angle = predict_angle_sep.arcsecond
+                r_to_search_c = np.max([r_due_to_angle, min_search_radius.value])
 
                 # see if anything is around the predicted position in c
                 indicies_c, distances_c = tree_next.query_radius(
@@ -289,7 +280,8 @@ for m in np.arange(len(image_series_list)):
                             frame="icrs",
                         )  
                         #print("angular", (temp_coord_b.separation(new_coord).arcsecond))
-                        vdiff = (temp_coord_b.separation(new_coord).arcsecond) / next_time_interval_s
+                        new_sep_dist = temp_coord_b.separation(new_coord).arcsecond
+                        vdiff = new_sep_dist / next_time_interval_s
                         current_mag=next_sources_df["magnitude"][found_index]
 
                         new_link = {
@@ -299,7 +291,7 @@ for m in np.arange(len(image_series_list)):
                             "observatory_code" : next_sources_df["observatory_code"][found_index],
                             "band" : next_sources_df["band"][found_index],
                             "ml_probs" : next_sources_df["ml_probs"][found_index],
-                            "ab_dist" : distances_c[0][j],
+                            "ang_sep_arcsec" : new_sep_dist,
                             "coords" :new_coord,
                             "vdiff" : vdiff,
                             "tracklet_time" : order_frames.time[number_links],
@@ -347,7 +339,7 @@ for m in np.arange(len(image_series_list)):
             #print("Passed mag screening with variance", np.round(mag_max - mag_min,3), "mag")       
             velocity_metric=abs(df["vdiff"].std()/df["vdiff"].mean())
             if velocity_metric < velocity_metric_threshold:
-                print("Passed velocity metric screening:", np.round(velocity_metric,6))
+                #print("Passed velocity metric screening:", np.round(velocity_metric,6))
                 if tracklet_num == 0:
                     tracklet_id_string = increment_identifier(starting_tracklet_id)
                 else:
@@ -391,7 +383,7 @@ for m in np.arange(len(image_series_list)):
             
             if save_tracklet_images:
                 figname=  "output/"+ data_id+ "/tracklet_"+ data_id+ "_"+ tracklet_id+ ".png"
-                create_diagnostic_figure(df, figname, show_sky_image, velocity_metric)
+                create_diagnostic_figure(df, figname, show_sky_image)
             
             if export_ades:
                 # update keys in obsData dictionary for all points
@@ -442,7 +434,7 @@ for m in np.arange(len(image_series_list)):
     now = datetime.now()
     yearmonthday = now.strftime("%Y%m%d")
     outputname = "output/" + data_id + "/o_linking_log" + data_id + ".csv"
-    run_time = str(np.round((now - start_time).total_seconds(),1))
+    run_time = str(np.round((now - start_time).total_seconds(),5))
     print("run time",run_time,"seconds.")
     num_sources = str(len(tracklets))
 

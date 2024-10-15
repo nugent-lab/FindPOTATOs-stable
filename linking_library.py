@@ -14,6 +14,32 @@ from astropy.visualization import ZScaleInterval
 from astropy.wcs import WCS
 from sklearn.neighbors import BallTree
 
+def angular_separation_metric(x, y):
+    """
+    Custom distance function for sklearn to calculate angular separation
+    between two points on the sky.
+
+    Parameters:
+    coord1, coord2 : array-like
+        Arrays of coordinates in the form [RA, Dec], where RA and Dec
+        are in degrees.
+
+    Returns:
+    separation : float
+        The angular separation between the two coordinates in arcseconds.
+    """
+    ra1, dec1 = x
+    ra2, dec2 = y
+    
+    # Create SkyCoord objects for each point
+    sky_coord1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg, frame='icrs')
+    sky_coord2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg, frame='icrs')
+    
+    # Calculate the angular separation
+    separation = sky_coord1.separation(sky_coord2).arcsecond
+    
+    return separation
+
 def remove_file_if_exists(filename):
     """
     Checks if file exists, removes it if it does
@@ -71,7 +97,7 @@ def find_orb(maxResidual, nullResid=True, MOIDLim=False):
             break
     if os.path.exists(os.path.expanduser(elements_path)):
         if os.path.getsize(os.path.expanduser(elements_path)) == 0:
-            sleep(0.2)
+            sleep(0.2) 
         # numObs = sum(1 for line in open(os.path.expanduser("~/.find_orb/fo.txt")))
         numObs = sum(
             1
@@ -152,8 +178,8 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         for key2, df2 in source_dataframes.items(): #remove duplicates
             if key != key2: #but only compare different frames
                 #print("Comparing", key, key2)
-                tree=BallTree(df2[["ra_rad", "dec_rad"]], leaf_size=5, metric="haversine")
-                indicies = tree.query_radius(df[["ra_rad", "dec_rad"]], r=thresh_rad)
+                tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
+                indicies = tree.query_radius(df[["RA", "Dec"]], r=thresh_rad)
                 for i in range(len(indicies)): #for each source in df
                     if len(indicies[i]) > 0: #these are the matches in df2
                         dupes_array_sum[i] += 1 #source in df has match in df2
@@ -161,13 +187,13 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
                         dupes_array_sum[i] += 0 #source in df does not have match
         #identify the duplicates but don't delete them, you'll need to reference
         # them as this loop goes on
-        df["dupes"]=dupes_array_sum
+        df["dupes"] = dupes_array_sum
 
     # Clean duplicates after all comparison is done.
     source_dataframes_moving = {f'{key}_moving': df.copy() for key, df in source_dataframes.items()}
     for key, df in source_dataframes_moving.items():
-        df = df[df['dupes'] < 1]
-        df.reset_index(inplace=True, drop=True)
+        source_dataframes_moving[key] = df[df['dupes'] < 1]
+        source_dataframes_moving[key].reset_index(inplace=True, drop=True)
 
     if showplots:
         for name, df in source_dataframes.items():
@@ -271,7 +297,7 @@ def query_skyview(ra, dec, width_pix, height_pix, survey='SDSSr'):
         header = images[0][0].header
         wcs = WCS(header)
     except:
-        print("query failed.")
+        print("SkyView query failed.")
         sky_image= np.zeros([bigger,bigger])
         wcs = False 
 
@@ -332,7 +358,7 @@ def format_data (tracklet):
         )
     return formatted_data
 
-def create_diagnostic_figure(tracklet, figname, show_sky_image, velocity_metric):
+def create_diagnostic_figure(tracklet, figname, show_sky_image):
     """
     Args:
         tracklet (df): dataframe with relevant tracklet information
@@ -347,7 +373,7 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image, velocity_metric)
         "Tracklet:"
         + tracklet["tracklet_id"].iloc[0]
         + " Velocity metric:"
-        + str(np.round(velocity_metric, 4))
+        + str(np.round(tracklet["vdiff"].std(), 4))
     )
     fig.suptitle(title_str, fontsize=16)
 

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
 
-def find_repeated_values_ra_dec(xml_file):
+def find_repeated_values(xml_file, field):
     """
     Check if multiple tracklets use the same points.
 
@@ -15,29 +15,65 @@ def find_repeated_values_ra_dec(xml_file):
         xml_file: xml file 
         feild: feild to look for repeats. ra works well.
     Returns:
-        df: dataframe with repeats
+        df: dataframe with values
     """
     tree = ET.parse(xml_file)
     root = tree.getroot()
 
-    ra_values_found = []
-    dec_values_found = []
+    values_found = []
     data = []
     for top_level_element in root:
         for obsData in top_level_element.findall('obsData'):
             for optical in obsData.findall('optical'):
-                ra_value = optical.find('ra').text
+                item_value = optical.find(field).text
                 trkSub_value = optical.find('trkSub').text
-                dec_value= optical.find('dec').text
-                data.append({'ra': ra_value, 'trkSub_value': trkSub_value})
-                if (ra_value in ra_values_found) and (dec_value in dec_values_found):
-                    message = f"Point repeated in tracklet. IDs: {ra_value}, {dec_value} trkSub: {trkSub_value}"
+                data.append({field: item_value, 'trkSub_value': trkSub_value})
+                if item_value in values_found:
+                    message = f"Point repeated in tracklet. IDs: {item_value}, trkSub: {trkSub_value}"
                     print(message)
                 else:
-                    ra_values_found.append(ra_value)
-                    dec_values_found.append(dec_value)
+                    values_found.append(item_value)
     df = pd.DataFrame(data)
     return df
+
+
+
+import xml.etree.ElementTree as ET
+import pandas as pd
+
+def get_xml_data(xml_file):
+    """
+    Args:
+        xml_file: Path to the XML file.
+    
+    Returns:
+        df: DataFrame with ra, dec, and tracklet name
+    """
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    # ra_dec_pairs_found = set()
+    data = []
+    
+    for top_level_element in root:
+        for obsData in top_level_element.findall('obsData'):
+            for optical in obsData.findall('optical'):
+                ra_value = optical.find('ra').text
+                dec_value = optical.find('dec').text
+                trkSub_value = optical.find('trkSub').text
+                data.append({'ra': ra_value, 'dec': dec_value, 'trkSub_value': trkSub_value})
+                #print("reading data",ra_value, dec_value, trkSub_value)
+                # # Check if the pair has been seen before
+                # if ra_dec_pair in ra_dec_pairs_found:
+                #     message = f"Point repeated in tracklet. IDs: {ra_value}, {dec_value}, trkSub: {trkSub_value}"
+                #     print(message)
+                # else:
+                #     ra_dec_pairs_found.add(ra_dec_pair)
+    
+    df = pd.DataFrame(data)
+    return df
+
+
 
 def display_images_and_ask(df, night):
     num_images = len(df)
@@ -97,29 +133,42 @@ def display_images_and_ask(df, night):
     return df_selected, df_rejected
 
 
-def process_by_ra_value(df, night):
-    # Count duplicates for each ra_value
-    df_duplicates = df.groupby('ra').filter(lambda x: len(x) > 1)
-
-    # Sort ra_values by number of duplicates in descending order
-    ra_value_counts = df_duplicates['ra'].value_counts()
-    unique_ra_values = df_duplicates['ra'].unique()
-
+def isolate_duplicates(df, night):
+    df_duplicates =  df.groupby(['ra', 'dec']).filter(lambda x: len(x) > 1)
 
     # Lists to store selected and rejected DataFrames
     selected_dfs = []
     rejected_dfs = []
+    rejected_names=[]
 
     # # Loop through unique values and produce separate DataFrames
-    for ra_value in unique_ra_values:
+    #for ra_value in unique_ra_values:
+    for (ra_value, dec_value), group in df_duplicates.groupby(['ra', 'dec']):
         df_subset = df[df['ra'] == ra_value]
-        #print(f"\nDataFrame for ra_value = {ra_value}:")
-        #print(df_subset)
+        df_subset = df_subset[df_subset['dec'] == dec_value]
 
-        selected, rejected = display_images_and_ask(df_subset, night)
-        # Append selected and rejected DataFrames to lists
-        selected_dfs.append(selected)
-        rejected_dfs.append(rejected)
+        # check if you've rejected n-1 of the candidates
+        # where n is the number of candidates
+        num_tracklets=len(df_subset)    
+        reject_count=0
+        for trackid in df_subset['trkSub_value']:
+            if trackid in rejected_names:
+                reject_count += 1
+            else:
+                df_selected_temp = df_subset[df_subset['trkSub_value'] == trackid]
+        if (reject_count+1) == num_tracklets:
+
+            selected_dfs.append(df_selected_temp)
+        elif reject_count == num_tracklets:
+            print("Previously rejected all, moving on", df_subset['trkSub_value'])
+        else: # ask about it 
+            selected, rejected = display_images_and_ask(df_subset, night)
+            # Append selected and rejected DataFrames to lists
+            selected_dfs.append(selected)
+            rejected_dfs.append(rejected)
+        
+            #keep track of the rejected names 
+            rejected_names.extend(rejected['trkSub_value'].tolist())
 
     # Concatenate all selected and rejected DataFrames
     df_selected_final = pd.concat(selected_dfs, ignore_index=True)
@@ -134,8 +183,8 @@ inputname= 'output/'+night+'/tracklets_ADES_'+ night +'.xml'
 output_unique= 'output/'+night+'/tracklets_ADES_'+ night +'_unique.xml'
 
 #df=find_repeated_values(inputname,'ra')
-df=find_repeated_values_ra_dec(inputname)
-df_selected_final, df_rejected_final = process_by_ra_value(df, night)
+df=get_xml_data(inputname)
+df_selected_final, df_rejected_final = isolate_duplicates(df, night)
 
 print("\nFinal Selected DataFrames:")
 print(df_selected_final)
@@ -157,11 +206,13 @@ if len(df_rejected_final) > 0:
         trkSub_element = optical.find('trkSub')
         if trkSub_element is not None and trkSub_element.text in trkSub_to_delete:
             optical_to_remove.append(optical)
-    #print("opitcal_to_remove", optical_to_remove)
+
     # Remove marked optical elements
     for optical in optical_to_remove:
         #print("trying", optical)
         obs_data.remove(optical)
+    else:
+        print("No repeats.")
 
 print("Writing to file.")
 xml_string = minidom.parseString(ET.tostring(root)).toprettyxml()
