@@ -309,7 +309,7 @@ for m in np.arange(len(image_series_list)):
                             tracklet_df.loc[number_links]  = new_link
                             tracklet_df_orig=tracklet_df.copy(deep = True)
                         else:
-                            print("multiple possible linkages.")
+                            #print("multiple possible linkages.")
                             new_df = tracklet_df_orig.copy(deep = True)
                             new_df.loc[number_links]  = new_link
                             new_key_str= key +str(j)
@@ -328,7 +328,7 @@ for m in np.arange(len(image_series_list)):
         print("No tracklets found.")
         continue  # skip to next frame group
 
-    # # Tracklet screening
+    # Tracklet screening
     sys.stdout.flush()  # print out everything before running FindOrb
     keys_to_delete = []
     for key,df in tracklets.items():
@@ -348,8 +348,8 @@ for m in np.arange(len(image_series_list)):
                 df['tracklet_id'] = tracklet_id
                 tracklet_num += 1
                 formatted_data=format_data(df)
-                if findorb_check == "y":
-                    findOrbTxt = open("/projectnb/ct-ast/findPOTATOs/fo.txt", "w")
+                if findorb_check:
+                    findOrbTxt = open("fo.txt", "w")
                     findOrbTxt.writelines(formatted_data)
                     findOrbTxt.close()
                     tracklet_found, res = find_orb(

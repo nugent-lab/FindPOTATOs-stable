@@ -52,9 +52,6 @@ def remove_file_if_exists(filename):
     """
     if os.path.exists(filename):
         os.remove(filename)
-        #print(f"File '{filename}' removed.")
-    #else:
-    #    print(f"File '{filename}' does not exist.")
     return 
 
 def find_orb(maxResidual, nullResid=True, MOIDLim=False):
@@ -101,22 +98,22 @@ def find_orb(maxResidual, nullResid=True, MOIDLim=False):
         # numObs = sum(1 for line in open(os.path.expanduser("~/.find_orb/fo.txt")))
         numObs = sum(
             1
-            for line in open(os.path.expanduser("/projectnb/ct-ast/findPOTATOs/fo.txt"))
+            for line in open(os.path.expanduser("fo.txt"))
         )
 
         # save all inputs to find_orb
-        open("outputs/AllPotentialTracklets.txt", "a+").writelines(
+        open("output/AllPotentialTracklets.txt", "a+").writelines(
             [l for l in open(
-                    os.path.expanduser("/projectnb/ct-ast/findPOTATOs/fo.txt")
+                    os.path.expanduser("fo.txt")
                 ).readlines()
             ]
         )
         for line in open(os.path.expanduser(elements_path)):
             li = line.strip()
             if not li.startswith("#"):
-                open("outputs/AllPotentialTracklets.txt", "a").writelines(line.rstrip())
-                open("outputs/AllPotentialTracklets.txt", "a").writelines("\n")
-        open("outputs/AllPotentialTracklets.txt", "a").writelines("\n\n")
+                open("output/AllPotentialTracklets.txt", "a").writelines(line.rstrip())
+                open("output/AllPotentialTracklets.txt", "a").writelines("\n")
+        open("output/AllPotentialTracklets.txt", "a").writelines("\n\n")
 
         resCheck = False
         for line in open(os.path.expanduser(elements_path)):
@@ -171,15 +168,13 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         plt.show()
         plt.close()
 
-    thresh_rad = np.radians(thresh.to(u.deg).value)
-
     for key, df in source_dataframes.items():
         dupes_array_sum=np.zeros(len(df))
         for key2, df2 in source_dataframes.items(): #remove duplicates
             if key != key2: #but only compare different frames
                 #print("Comparing", key, key2)
                 tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
-                indicies = tree.query_radius(df[["RA", "Dec"]], r=thresh_rad)
+                indicies = tree.query_radius(df[["RA", "Dec"]], r=thresh)
                 for i in range(len(indicies)): #for each source in df
                     if len(indicies[i]) > 0: #these are the matches in df2
                         dupes_array_sum[i] += 1 #source in df has match in df2
@@ -207,47 +202,6 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         plt.show()
         plt.close()
     return source_dataframes_moving
-
-
-def return_thumbnail(x_pos, y_pos, telescope_image):
-    """
-    Return thumbnail of source 
-    Args:
-        x_pos: float, RA of source you want thumbnail of
-        y_pos: float, Dec of source you want thumbnail of
-        telescope_image: array, actual image
-    Returns:
-        cropped_image: image of source, scaled
-    """
-    buffer = 9
-    left = int(x_pos) - (buffer - 1)
-    right = int(x_pos) + (buffer)
-    upper = int(y_pos) + (buffer - 1)
-    lower = int(y_pos) - (buffer)
-
-    if left < 0:
-        left = 0
-    elif upper < 0:
-        upper = 0
-    elif right > telescope_image.shape[1]:
-        right = telescope_image.shape[1]
-    elif lower >= telescope_image.shape[0]:
-        lower = telescope_image.shape[0]
-
-    # Crop the image and scale it
-    cropped_array = telescope_image[lower:upper, left:right]
-    try:
-        scaled_array = (
-            (cropped_array - np.min(cropped_array))
-            / (np.max(cropped_array) - np.min(cropped_array))
-            * 255
-        ).astype(np.uint8)
-        cropped_image = Image.fromarray(scaled_array, mode="L")
-    except ValueError:
-        print("Error rescaling, here's the cropped_array", cropped_array)
-        cropped_image =np.zeros((17, 17))
-    return cropped_image
-
 
 def increment_identifier(identifier='00000'):
     """
@@ -447,7 +401,9 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image):
         else:
             axs[2].remove()
             axs[2] = plt.subplot(133, projection=wcs)
-            pix_x, pix_y = tracklet["coords"][1].to_pixel(wcs)
+            pix_x_a, pix_y_a = tracklet["coords"][0].to_pixel(wcs)
+            pix_x_b, pix_y_b = tracklet["coords"][1].to_pixel(wcs)
+            pix_x_c, pix_y_c = tracklet["coords"][2].to_pixel(wcs)
             axs[2].imshow(
                 sky_image.data,
                 cmap="gray",
@@ -456,8 +412,8 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image):
                 vmax=vmax,
             )
             axs[2].scatter(
-                pix_x,
-                pix_y,
+                [pix_x_a, pix_x_b, pix_x_c],
+                [pix_y_a, pix_y_b, pix_y_c],
                 marker="o",
                 facecolors="none",
                 edgecolors="red",
@@ -470,7 +426,6 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image):
     axs[2].set_xlabel(six_xlabel, fontsize=8)
     axs[2].set_ylabel(six_ylabel)
 
-    # plt.show()
     plt.tight_layout()
     plt.savefig(figname)
     plt.close("all")

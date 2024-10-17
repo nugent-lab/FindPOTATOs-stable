@@ -26,7 +26,7 @@ export_ades = True
 
 # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
-stationary_dist_deg = 0.5 * u.arcsec
+stationary_dist_deg = 2.5 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
 max_mag_variance = 2  # mag

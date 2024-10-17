@@ -26,7 +26,7 @@ export_ades = True
 
 # the max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
-stationary_dist_deg = 0.5 * u.arcsec
+stationary_dist_deg = 2.5 * u.arcsec
 
 # the maximum amount brightness can vary across a tracklet
 max_mag_variance = 2  # mag
@@ -66,7 +66,7 @@ maximum_residual = 0.9  # arcseconds
 # to each detection
 # If the input file doesn't have a column named ml_probs
 # then the code will ignore and move on.
-ml_thresh=0.90
+ml_thresh=0
 
 ########## ADES PARAMETERS ##########
 # header information. None of these will be changed by the
