@@ -159,6 +159,7 @@ Before 2022, there was no publicly available minor planet detection linking soft
 1. [Heliolinc3D](https://github.com/lsst-dm/heliolinc2)
 2. [PUMA](https://github.com/atlas-ifa/puma/tree/main)
 3. [THOR](https://github.com/moeyensj/thor)
+4. [CANFind](https://github.com/katiefasbender/CANFind)
 
 ## License 
 
