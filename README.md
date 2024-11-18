@@ -1,5 +1,7 @@
 # FindPOTATOs
 
+If you use this software, please [cite](#how-to-cite) our paper and [let us know](www.crnugent.com/contact)! Knowing how people use this software will help us secure funding for improvements.
+
 ## Summary
 This software links together minor planet detections to form a tracklet. Tracklets are required so that minor planet observations can be submitted to the [Minor Planet Center](https://minorplanetcenter.net). 
 
@@ -135,7 +137,6 @@ python findPOTATOs.py south
 
 
 ## Caveats 
-
 Please keep in mind the following caveats.
 1. Ensure that your data is clean, and does not include stationary sources. The SDSS sky image is provided to help ensure stationary sources are not present in the tracklet; however, the SDSS images are not available for all regions of the sky. It is the user's responsibility to ensure data fidelity. [Aladin Lite](http://aladin.cds.unistra.fr/AladinLite/) is a good resource for ruling out stationary sources.
 2. FindPOTATOs may return multiple tracklets that contain the same detection. Before submission of tracklets to the MPC, please check to ensure that each tracklet contains unique detections.
@@ -144,14 +145,11 @@ Please keep in mind the following caveats.
 5. Ensure that the timing of your observations is correct. Timing errors, particularly offsets between recorded time and actual time, are fairly common and can cause serious issues. One way to ensure that timing is correct is to compare a known, numbered, minor planet's position in your images with predicted positions from [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/). Timing errors will not necessarily be caught by use of the Minor Planet Checker described in #3.
 
 ## How to Cite
+If you use or adapt this software please cite the following:
 
-If you us or adapt this software please cite the following:
+1. C. R. Nugent, N. Tan, and J. Bauer, FINDPOTATOs: Minor Planet Observation Linking Software. Accepted to The Planetary Science Journal, 2024.
 
-1. C. R. Nugent, N. Tan, and J. Bauer, FINDPOTATOs: Minor Planet Observation Linking Software (submitted)
-
-2. [N. Tan's Wellesley Honors Thesis](https://repository.wellesley.edu/object/ir1199).
-
-3. If you use the Find_Orb-enabled screening, please cite [Bill Gray's work](https://projectpluto.com/find_orb.htm).
+2. If you use the Find_Orb-enabled screening, please cite [Bill Gray's work](https://projectpluto.com/find_orb.htm).
 
 ## Other linking software 
 Before 2022, there was no publicly available minor planet detection linking software. But today, there's multiple options besides FindPOTATOs. You may be interested in:
