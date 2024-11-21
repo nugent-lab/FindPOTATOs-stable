@@ -147,7 +147,7 @@ Please keep in mind the following caveats.
 ## How to Cite
 If you use or adapt this software please cite the following:
 
-1. C. R. Nugent, N. Tan, and J. Bauer, FINDPOTATOs: Minor Planet Observation Linking Software. Accepted to The Planetary Science Journal, 2024.
+1. C. R. Nugent, N. Tan, and J. Bauer, FINDPOTATOs: Minor Planet Observation Linking Software. Accepted to The Planetary Science Journal, 2024. DOI: 10.3847/PSJ/ad94eb
 
 2. If you use the Find_Orb-enabled screening, please cite [Bill Gray's work](https://projectpluto.com/find_orb.htm).
 

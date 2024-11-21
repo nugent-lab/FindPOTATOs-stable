@@ -10,28 +10,28 @@ image_path = "images/"
 # Length 5 string to start increments with.
 starting_tracklet_id = "00000"  # string, length = 5
 
-# your unique tracklet code, will precede the tracklet id
-# your tracklets will be named tracklet_tag+starting_tracklet_id
+# Your unique tracklet code, will precede the tracklet id
+# Your tracklets will be named tracklet_tag+starting_tracklet_id
 tracklet_tag = "aa"  # string, reccomended length = 2
 
-# turn this on if you want to save diagnostic images and plots of each tracklet
+# Turn this on if you want to save diagnostic images and plots 
+# of each tracklet
 save_tracklet_images = True
 
-# query skyveiw for cutout of sky
+# Query skyveiw for cutout of sky
 show_sky_image = True  
 
-# turn this on (='y') if you want observations exported in XML ADES format
-# more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
+# More on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 export_ades = True
 
-# the max distance between two sources in order for them
+# The max distance between two sources in order for them
 # to be considered the same, and therefore stationary, and removed.
 stationary_dist_deg = 2.5 * u.arcsec
 
-# the maximum amount brightness can vary across a tracklet
+# The maximum amount brightness can vary across a tracklet
 max_mag_variance = 2  # mag
 
-# maximum speed an asteroid can travel to be detected
+# Maximum speed an asteroid can travel to be detected
 # you don't want this more than ~1/5th of the size of the frame, anything
 # faster is both unlikely and undetectable as it will leave the frame before
 # three detections can be made
@@ -42,7 +42,8 @@ max_speed = 0.05  # arcseconds/second
 # a tracklet, so this should be higher to find close NEAs
 velocity_metric_threshold = 0.25   # arcseconds/second
 
-# minimum angle between a-b, b-c, will be used to search for det in frame c
+# Minimum angle between a-b, b-c, will be used to search for detetection 
+# in frame c
 min_tracklet_angle = 160 * u.deg
 
 # Code will pick the biggest radius derived from min_tracklet_angle and
@@ -52,7 +53,7 @@ min_tracklet_angle = 160 * u.deg
 # across the plane of the sky changes betweeen A-B and B-C.
 min_search_radius = 5 * u.arcsec
 
-# smallest distance you will accept an asteroid to move between frames
+# Smallest distance you will accept an asteroid to move between frames
 min_dist_deg = 1.0  # arcseconds
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
@@ -69,7 +70,7 @@ maximum_residual = 0.9  # arcseconds
 ml_thresh=0.90
 
 ########## ADES PARAMETERS ##########
-# header information. None of these will be changed by the
+# Header information. None of these will be changed by the
 # code.
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 ades_dict = {
