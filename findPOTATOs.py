@@ -337,7 +337,7 @@ for m in np.arange(len(image_series_list)):
         mag_max=df["mag"].max()
         if (mag_max - mag_min) < max_mag_variance:
             #print("Passed mag screening with variance", np.round(mag_max - mag_min,3), "mag")       
-            velocity_metric=abs(df["vdiff"].std()/df["vdiff"].mean())
+            velocity_metric=abs(df["vdiff"].std())
             if velocity_metric < velocity_metric_threshold:
                 #print("Passed velocity metric screening:", np.round(velocity_metric,6))
                 if tracklet_num == 0:
