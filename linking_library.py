@@ -167,22 +167,49 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         plt.legend()
         plt.show()
         plt.close()
+    for key, df in source_dataframes.items():
+        df["ra_rad"] = np.radians(df["RA"])
+        df["dec_rad"] = np.radians(df["Dec"])
+
+    # this is a hybrid method for speed- find subset of 
+    # matches within 2x threshold using inprecise Haversine approx
+    # then check with astropy separation for realsies.
+    double_thresh_rad= 2 * np.radians(thresh.to(u.deg).value)
 
     for key, df in source_dataframes.items():
         dupes_array_sum=np.zeros(len(df))
         for key2, df2 in source_dataframes.items(): #remove duplicates
             if key != key2: #but only compare different frames
-                #print("Comparing", key, key2)
-                tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
-                indicies = tree.query_radius(df[["RA", "Dec"]], r=thresh)
+                #tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
+                tree=BallTree(df2[["ra_rad", "dec_rad"]],  metric='haversine')
+
+                #tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
+                indicies = tree.query_radius(df[["ra_rad", "dec_rad"]], r=double_thresh_rad)
+
+
                 for i in range(len(indicies)): #for each source in df
-                    if len(indicies[i]) > 0: #these are the matches in df2
-                        dupes_array_sum[i] += 1 #source in df has match in df2
-                    else:
-                        dupes_array_sum[i] += 0 #source in df does not have match
-        #identify the duplicates but don't delete them, you'll need to reference
-        # them as this loop goes on
-        df["dupes"] = dupes_array_sum
+                    findany=False
+                    for j in range(len(indicies[i])):
+                        if not findany:
+                            ra1, dec1 = df2.iloc[indicies[i][j]].RA.item(), df2.iloc[indicies[i][j]].Dec.item()
+                            ra2, dec2 = df["RA"].iloc[i].item(), df["Dec"].iloc[i].item()
+                            sky_coord1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg, frame='icrs')
+                            sky_coord2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg, frame='icrs')
+                            # Calculate the angular separation because its more accurate than haversine
+                            separation_val = sky_coord1.separation(sky_coord2).arcsecond
+                            #print("separation",separation_val, "thresh", removal_dist.value)
+                            if separation_val < thresh.value:
+                                #print("labeling for removal")
+                                dupes_array_sum[i] += 1 #source in df has match in df2
+                                findany = True
+                            else:
+                                dupes_array_sum[i] += 0 #source in df does not have match
+
+                    #identify the duplicates but don't delete them, you'll need to reference
+                    # them as this loop goes on
+                    df["dupes"] = dupes_array_sum
+                    #df.loc[:, "dupes"] = dupes_array_sum
+
 
     # Clean duplicates after all comparison is done.
     source_dataframes_moving = {f'{key}_moving': df.copy() for key, df in source_dataframes.items()}

@@ -17,7 +17,7 @@ from parameters import *
 # python findPOTATOs.py [data_id]
 #  C.R. Nugent, N. Tan, S. Matsumoto
 # Version 2.0, can create linkages of length > 3
-
+pd.options.mode.copy_on_write = True 
 data_id=str(sys.argv[1])
 
 print("Running with the following parameters from parameters.py")
