@@ -260,6 +260,7 @@ def query_skyview(ra, dec, width_pix, height_pix, survey='SDSSr'):
         sky_image = image of sky 
         wcs = header info about sky
     """
+    SkyView.URL = 'https://skyview.gsfc.nasa.gov/current/cgi/basicform.pl'
     if width_pix > height_pix:
         bigger=int(width_pix)+10
     else:
