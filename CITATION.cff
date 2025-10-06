@@ -1,0 +1,29 @@
+    title: "FindPOTATOs: Minor Planet Observation Linking Software"
+    abstract: "For minor planet observations to be archived and used by the scientific community, observations of individual objects must be linked together into groups called tracklets. This linking is nontrivial, as linking software must find real tracklets in noisy data within a reasonable amount of time. We describe FindPOTATOs, a linking software written in Python that can assemble minor planet tracklets. With the appropriate parameters, FindPOTATOs assembles tracklets for a variety of objects, including close-approaching near-Earth objects and trans-Neptunian objects. FindPOTATOs is ideal for processing data sets taken at small observatories, processing archival data, or finding tracklets of minor planets on unusual orbits. This paper describes the code structure, usage, and validation."
+    type: journalArticle
+    database: NASA ADS
+    date-accessed: 2025-05-22T17:15:27Z
+    issn: 2632-3338
+    pages: 18
+    volume: 6
+    url: https://ui.adsabs.harvard.edu/abs/2025PSJ.....6...18N
+    keywords: 
+      - Astrophysics - Earth and Planetary Astrophysics
+      - Near-Earth objects
+      - Astrophysics - Instrumentation and Methods for Astrophysics
+      - Astronomy software
+      - Main belt asteroids
+      - Observational astronomy
+      - Publicly available software
+      - Trans-Neptunian objects
+    authors: 
+      - family-names: Nugent
+        given-names: C. R.
+      - family-names: Tan
+        given-names: Nicole J.
+      - family-names: Bauer
+        given-names: James M.
+    date-published: 2025-01-01
+    identifiers: 
+      - type: doi
+        value: 10.3847/PSJ/ad94eb
