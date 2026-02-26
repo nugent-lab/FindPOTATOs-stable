@@ -2,9 +2,7 @@ import os
 import subprocess
 import re  # regular expressions, used to search for mean residuals in Find_orb output files
 from time import sleep
-import pandas as pd
 import numpy as np
-from PIL import Image
 import matplotlib.pyplot as plt
 from astroquery.skyview import SkyView
 import astropy.units as u
@@ -13,6 +11,7 @@ import matplotlib.ticker as ticker
 from astropy.visualization import ZScaleInterval
 from astropy.wcs import WCS
 from sklearn.neighbors import BallTree
+
 
 def angular_separation_metric(x, y):
     """
@@ -30,15 +29,16 @@ def angular_separation_metric(x, y):
     """
     ra1, dec1 = x
     ra2, dec2 = y
-    
+
     # Create SkyCoord objects for each point
-    sky_coord1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg, frame='icrs')
-    sky_coord2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg, frame='icrs')
-    
+    sky_coord1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg, frame="icrs")
+    sky_coord2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg, frame="icrs")
+
     # Calculate the angular separation
     separation = sky_coord1.separation(sky_coord2).arcsecond
-    
+
     return separation
+
 
 def remove_file_if_exists(filename):
     """
@@ -52,7 +52,8 @@ def remove_file_if_exists(filename):
     """
     if os.path.exists(filename):
         os.remove(filename)
-    return 
+    return
+
 
 def find_orb(maxResidual, nullResid=True, MOIDLim=False):
     """
@@ -94,19 +95,13 @@ def find_orb(maxResidual, nullResid=True, MOIDLim=False):
             break
     if os.path.exists(os.path.expanduser(elements_path)):
         if os.path.getsize(os.path.expanduser(elements_path)) == 0:
-            sleep(0.2) 
+            sleep(0.2)
         # numObs = sum(1 for line in open(os.path.expanduser("~/.find_orb/fo.txt")))
-        numObs = sum(
-            1
-            for line in open(os.path.expanduser("fo.txt"))
-        )
+        numObs = sum(1 for line in open(os.path.expanduser("fo.txt")))
 
         # save all inputs to find_orb
         open("output/AllPotentialTracklets.txt", "a+").writelines(
-            [l for l in open(
-                    os.path.expanduser("fo.txt")
-                ).readlines()
-            ]
+            [l for l in open(os.path.expanduser("fo.txt")).readlines()]
         )
         for line in open(os.path.expanduser(elements_path)):
             li = line.strip()
@@ -171,57 +166,71 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         df["ra_rad"] = np.radians(df["RA"])
         df["dec_rad"] = np.radians(df["Dec"])
 
-    # this is a hybrid method for speed- find subset of 
+    # this is a hybrid method for speed- find subset of
     # matches within 2x threshold using inprecise Haversine approx
     # then check with astropy separation for realsies.
-    double_thresh_rad= 2 * np.radians(thresh.to(u.deg).value)
+    double_thresh_rad = 2 * np.radians(thresh.to(u.deg).value)
 
     for key, df in source_dataframes.items():
-        dupes_array_sum=np.zeros(len(df))
-        for key2, df2 in source_dataframes.items(): #remove duplicates
-            if key != key2: #but only compare different frames
-                #tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
-                tree=BallTree(df2[["ra_rad", "dec_rad"]],  metric='haversine')
+        dupes_array_sum = np.zeros(len(df))
+        for key2, df2 in source_dataframes.items():  # remove duplicates
+            if key != key2:  # but only compare different frames
+                # tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
+                tree = BallTree(df2[["ra_rad", "dec_rad"]], metric="haversine")
 
-                #tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
-                indicies = tree.query_radius(df[["ra_rad", "dec_rad"]], r=double_thresh_rad)
+                # tree=BallTree(df2[["RA", "Dec"]],  metric='pyfunc', func=angular_separation_metric)
+                indicies = tree.query_radius(
+                    df[["ra_rad", "dec_rad"]], r=double_thresh_rad
+                )
 
-
-                for i in range(len(indicies)): #for each source in df
-                    findany=False
+                for i in range(len(indicies)):  # for each source in df
+                    findany = False
                     for j in range(len(indicies[i])):
                         if not findany:
-                            ra1, dec1 = df2.iloc[indicies[i][j]].RA.item(), df2.iloc[indicies[i][j]].Dec.item()
-                            ra2, dec2 = df["RA"].iloc[i].item(), df["Dec"].iloc[i].item()
-                            sky_coord1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg, frame='icrs')
-                            sky_coord2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg, frame='icrs')
+                            ra1, dec1 = (
+                                df2.iloc[indicies[i][j]].RA.item(),
+                                df2.iloc[indicies[i][j]].Dec.item(),
+                            )
+                            ra2, dec2 = (
+                                df["RA"].iloc[i].item(),
+                                df["Dec"].iloc[i].item(),
+                            )
+                            sky_coord1 = SkyCoord(
+                                ra=ra1 * u.deg, dec=dec1 * u.deg, frame="icrs"
+                            )
+                            sky_coord2 = SkyCoord(
+                                ra=ra2 * u.deg, dec=dec2 * u.deg, frame="icrs"
+                            )
                             # Calculate the angular separation because its more accurate than haversine
                             separation_val = sky_coord1.separation(sky_coord2).arcsecond
-                            #print("separation",separation_val, "thresh", removal_dist.value)
+                            # print("separation",separation_val, "thresh", removal_dist.value)
                             if separation_val < thresh.value:
-                                #print("labeling for removal")
-                                dupes_array_sum[i] += 1 #source in df has match in df2
+                                # print("labeling for removal")
+                                dupes_array_sum[i] += 1  # source in df has match in df2
                                 findany = True
                             else:
-                                dupes_array_sum[i] += 0 #source in df does not have match
+                                dupes_array_sum[
+                                    i
+                                ] += 0  # source in df does not have match
 
-                    #identify the duplicates but don't delete them, you'll need to reference
+                    # identify the duplicates but don't delete them, you'll need to reference
                     # them as this loop goes on
                     df["dupes"] = dupes_array_sum
-                    #df.loc[:, "dupes"] = dupes_array_sum
-
+                    # df.loc[:, "dupes"] = dupes_array_sum
 
     # Clean duplicates after all comparison is done.
-    source_dataframes_moving = {f'{key}_moving': df.copy() for key, df in source_dataframes.items()}
+    source_dataframes_moving = {
+        f"{key}_moving": df.copy() for key, df in source_dataframes.items()
+    }
     for key, df in source_dataframes_moving.items():
-        source_dataframes_moving[key] = df[df['dupes'] < 1]
+        source_dataframes_moving[key] = df[df["dupes"] < 1]
         source_dataframes_moving[key].reset_index(inplace=True, drop=True)
 
     if showplots:
         for name, df in source_dataframes.items():
             plt.scatter(df.RA, df.Dec, alpha=0.4, label=name)
         for name2, df2 in source_dataframes_moving.items():
-            plt.scatter(df2.RA, df2.Dec, color='black', alpha=1, label=name2)
+            plt.scatter(df2.RA, df2.Dec, color="black", alpha=1, label=name2)
         plt.title("Sources after stationary cleaning. Transitory sources are black.")
         plt.xlabel("Right ascension (degrees)")
         plt.ylabel("Declination (degrees)")
@@ -230,22 +239,23 @@ def remove_stationary_sources(source_dataframes, thresh, showplots=False):
         plt.close()
     return source_dataframes_moving
 
-def increment_identifier(identifier='00000'):
+
+def increment_identifier(identifier="00000"):
     """
-    Produces unique alphanumeric identifier for tracklets. 
+    Produces unique alphanumeric identifier for tracklets.
     Args:
-        identifier: the last identifier used. 
+        identifier: the last identifier used.
     Returns:
         next identifier in sequence
     """
-    allowable_id_chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+    allowable_id_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
     index = allowable_id_chars.index(identifier[-1])
     if index < len(allowable_id_chars) - 1:
         return identifier[:-1] + allowable_id_chars[index + 1]
     return increment_identifier(identifier[:-1]) + allowable_id_chars[0]
 
 
-def query_skyview(ra, dec, width_pix, height_pix, survey='SDSSr'):
+def query_skyview(ra, dec, width_pix, height_pix, survey="SDSSr"):
     """
     Query SkyView to retrieve an image of the sky at the given RA and Dec.
 
@@ -255,75 +265,77 @@ def query_skyview(ra, dec, width_pix, height_pix, survey='SDSSr'):
         width (int): width of image in pix
         height (int): height of image in pix
         survey (str): Survey to retrieve image from (default='SDSSr').
-        
+
     Returns:
-        sky_image = image of sky 
+        sky_image = image of sky
         wcs = header info about sky
     """
-    SkyView.URL = 'https://skyview.gsfc.nasa.gov/current/cgi/basicform.pl'
+    SkyView.URL = "https://skyview.gsfc.nasa.gov/current/cgi/basicform.pl"
     if width_pix > height_pix:
-        bigger=int(width_pix)+10
+        bigger = int(width_pix) + 10
     else:
-        bigger=int(height_pix)+10
+        bigger = int(height_pix) + 10
     # Query SkyView
-    try: 
+    try:
         images = SkyView.get_images(
-            position=f'{ra} {dec}', 
-            coordinates='J2000', 
-            survey=survey, 
-            pixels=str(bigger)
+            position=f"{ra} {dec}",
+            coordinates="J2000",
+            survey=survey,
+            pixels=str(bigger),
         )
         sky_image = images[0][0].data
-        #sky_image = np.flip(sky_image, axis=1)
-        #sky_image = images[0][0]
+        # sky_image = np.flip(sky_image, axis=1)
+        # sky_image = images[0][0]
         header = images[0][0].header
         wcs = WCS(header)
     except:
         print("SkyView query failed.")
-        sky_image= np.zeros([bigger,bigger])
-        wcs = False 
+        sky_image = np.zeros([bigger, bigger])
+        wcs = False
 
     return sky_image, wcs
-    
+
 
 def zero_pad(string):
     if len(string) < 5:
         num_zeros = 5 - len(string)
-        padded_string = string + '0' * num_zeros
+        padded_string = string + "0" * num_zeros
         return padded_string
     else:
         return string
-    
+
+
 def print_dict(dictionary, indent=0):
     for key, value in dictionary.items():
         if isinstance(value, dict):
-            print('  ' * indent + str(key) + ':')
+            print("  " * indent + str(key) + ":")
             print_dict(value, indent + 1)
         elif isinstance(value, list):
-            print('  ' * indent + str(key) + ':')
+            print("  " * indent + str(key) + ":")
             for item in value:
-                print('  ' * (indent + 1) + str(item))
+                print("  " * (indent + 1) + str(item))
         else:
-            print('  ' * indent + str(key) + ': ' + str(value))
+            print("  " * indent + str(key) + ": " + str(value))
 
-def format_data (tracklet):
+
+def format_data(tracklet):
     """
     Format data in the Minor Planet Center (MPC) 80-char format
     Args:
         tracklet (df):a dataframe of tracklet information
-            
+
     Returns:
         formatted_data (str): string with proper formatting
     """
-    first=True
+    first = True
     for index, row in tracklet.iterrows():
         if first:
             formatted_data = "     "
             first = False
         else:
             formatted_data += "     "
-        obstime=row["tracklet_time"].strftime("%Y %m %d")
-        coord=row["coords"]
+        obstime = row["tracklet_time"].strftime("%Y %m %d")
+        coord = row["coords"]
         formatted_data += "{}".format(row["tracklet_id"]) + "  C"
         formatted_data += "{}".format(obstime) + "."
         formatted_data += "{:1}".format(row["decimal_time"]) + " "
@@ -332,24 +344,20 @@ def format_data (tracklet):
             + "         "
         )
         formatted_data += "{:.1f}".format(row["mag"]) + "   "
-        formatted_data += (
-            row["band"]
-            + "    "
-            + str(row["observatory_code"])
-            + "\n"
-        )
+        formatted_data += row["band"] + "    " + str(row["observatory_code"]) + "\n"
     return formatted_data
+
 
 def create_diagnostic_figure(tracklet, figname, show_sky_image):
     """
     Args:
         tracklet (df): dataframe with relevant tracklet information
-        figname (str) : string with name of figure 
+        figname (str) : string with name of figure
         show_sky_image (bool): if you want image of the sky from SDSS
     Returns:
         none, though it will save an image
     """
-            
+
     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
     title_str = (
         "Tracklet:"
@@ -360,31 +368,25 @@ def create_diagnostic_figure(tracklet, figname, show_sky_image):
     fig.suptitle(title_str, fontsize=16)
 
     # Plot magnitude
-    axs[0].scatter(np.arange(len(tracklet)),tracklet["mag"], c="purple")
+    axs[0].scatter(np.arange(len(tracklet)), tracklet["mag"], c="purple")
     axs[0].set_title("Lightcurve")
     axs[0].set_xlabel("Gridlines are 0.5mag", fontsize=8)
     axs[0].set_ylabel("Magnitudes, mag")
-    axs[0].grid(
-        True, linestyle="--", which="both", color="gray", linewidth=0.5
-    )
+    axs[0].grid(True, linestyle="--", which="both", color="gray", linewidth=0.5)
     axs[0].yaxis.set_major_locator(ticker.MultipleLocator(0.5))
     axs[0].set_xticks(np.arange(len(tracklet)))
     axs[0].xaxis.grid(False)
 
     # Plot tracklet in RA/DEC
-    #tracklet_coord = SkyCoord(ra=tracklet["ra"], dec=tracklet["dec"], unit="deg")
-    ra_list=tracklet["ra"]
-    dec_list=tracklet["dec"]
-    axs[1].scatter(
-        ra_list, dec_list, c="purple", label="Tracklet"
-    )
+    # tracklet_coord = SkyCoord(ra=tracklet["ra"], dec=tracklet["dec"], unit="deg")
+    ra_list = tracklet["ra"]
+    dec_list = tracklet["dec"]
+    axs[1].scatter(ra_list, dec_list, c="purple", label="Tracklet")
     axs[1].set_title("Tracklet position on sky.")
     axs[1].set_xlabel("RA, deg.", fontsize=8)
     axs[1].set_ylabel("Dec, deg")
     axs[1].legend(fontsize=6)
-    axs[1].grid(
-        True, linestyle="--", which="both", color="gray", linewidth=0.5
-    )
+    axs[1].grid(True, linestyle="--", which="both", color="gray", linewidth=0.5)
     # axs[1].yaxis.set_major_locator(ticker.MultipleLocator(0.0027))
     # axs[1].xaxis.set_major_locator(ticker.MultipleLocator(0.0027))
     axs[1].set(aspect="equal")

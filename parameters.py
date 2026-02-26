@@ -14,12 +14,12 @@ starting_tracklet_id = "00000"  # string, length = 5
 # Your tracklets will be named tracklet_tag+starting_tracklet_id
 tracklet_tag = "aa"  # string, reccomended length = 2
 
-# Turn this on if you want to save diagnostic images and plots 
+# Turn this on if you want to save diagnostic images and plots
 # of each tracklet
 save_tracklet_images = True
 
 # Query skyveiw for cutout of sky
-show_sky_image = True  
+show_sky_image = True
 
 # More on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 export_ades = True
@@ -40,9 +40,9 @@ max_speed = 0.05  # arcseconds/second
 # Maximum standard deviation in velocity between detections
 # Close-approaching objects may have apparent velocity changes over
 # a tracklet, so this should be higher to find close NEAs
-velocity_metric_threshold = 0.25   # arcseconds/second
+velocity_metric_threshold = 0.25  # arcseconds/second
 
-# Minimum angle between a-b, b-c, will be used to search for detetection 
+# Minimum angle between a-b, b-c, will be used to search for detetection
 # in frame c
 min_tracklet_angle = 160 * u.deg
 
@@ -57,24 +57,24 @@ min_search_radius = 5 * u.arcsec
 min_dist_deg = 1.0  # arcseconds
 
 # Check tracklets using Bill Gray's Find Orb for accuracy.
-findorb_check = False  
+findorb_check = False
 # values below this threshold will be rejected
 maximum_residual = 0.9  # arcseconds
 
 # Optional; screen on ml_probs associated with sources
 # this is intended to allow the use of a machine learning
-# algorithm to assign a probability of source "realness" 
+# algorithm to assign a probability of source "realness"
 # to each detection
 # If the input file doesn't have a column named ml_probs
 # then the code will ignore and move on.
-ml_thresh=0.90
+ml_thresh = 0.90
 
 ########## ADES PARAMETERS ##########
 # Header information. None of these will be changed by the
 # code.
 # more on ADES here: https://minorplanetcenter.net/iau/info/ADES.html
 ades_dict = {
-    "mpcCode": "535", 
+    "mpcCode": "535",
     "observatoryName": "Palermo Astronomical Observatory",
     "submitter": "D. Bowie",
     "observers": "B. Yonce",
